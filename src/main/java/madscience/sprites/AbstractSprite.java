@@ -46,6 +46,7 @@ public abstract class AbstractSprite {
     }
 
     public abstract void update(double sec);
+    public abstract void performIntersection(AbstractSprite sprite);
     public abstract void draw(Graphics2D g);
 
 }

@@ -3,6 +3,7 @@ package madscience.sprites;
 import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.geom.Rectangle2D;
+import java.util.EnumSet;
 import madscience.Game;
 
 /**
@@ -10,6 +11,8 @@ import madscience.Game;
  * @author Richard Kakaš
  */
 public class PlayerSprite extends ShooterSprite {
+
+    private double lastX, lastY;
 
     public PlayerSprite(Game game, double x, double y) {
         super(game, x, y);
@@ -31,27 +34,25 @@ public class PlayerSprite extends ShooterSprite {
 
     @Override
     public void update(double sec) {
-        double beforeX = x, beforeY = y;
+        lastX = x;
+        lastY = y;
         super.update(sec);
 
-        Game.SpriteIntersection inter = game.getIntersection(this);
-        if (inter.hasType(Game.SpriteIntersection.Type.TOP_BORDER) ||
-            inter.hasType(Game.SpriteIntersection.Type.BOTTOM_BORDER) ||
-            inter.hasType(Game.SpriteIntersection.Type.LEFT_BORDER) ||
-            inter.hasType(Game.SpriteIntersection.Type.RIGHT_BORDER)) {
-            x = beforeX;
-            y = beforeY;
+        EnumSet<Game.Border> borders = game.getBorders(this);
+        if (borders.contains(Game.Border.TOP_BORDER ) ||
+            borders.contains(Game.Border.BOTTOM_BORDER) ||
+            borders.contains(Game.Border.LEFT_BORDER) ||
+            borders.contains(Game.Border.RIGHT_BORDER)) {
+            x = lastX;
+            y = lastY;
             setSpeedXY(0, 0);
         }
+    }
 
-        if (inter.hasType(Game.SpriteIntersection.Type.OTHER_SPRITE)) {
-            for (AbstractSprite sprite : inter.getOtherSprites()) {
-                if (sprite instanceof BulletSprite &&
-                    ((BulletSprite) sprite).getOwner() != this)
-                    game.addPlayerLives(-1);
-            }
-        }
-
+    @Override
+    public void performIntersection(AbstractSprite sprite) {
+        if (sprite instanceof BulletSprite && ((BulletSprite) sprite).getOwner() != this)
+            game.addPlayerLives(-1);
     }
 
     @Override

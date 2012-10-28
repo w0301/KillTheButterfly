@@ -6,7 +6,6 @@ import java.util.EnumSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
-import java.util.Set;
 import madscience.sprites.AbstractSprite;
 import madscience.sprites.EnemySprite;
 import madscience.sprites.PlayerSprite;
@@ -19,36 +18,15 @@ import madscience.sprites.ShooterSprite;
 public final class Game {
     public static final int MAX_PLAYER_LIVES = 3;
 
-    public static class SpriteIntersection {
-        public enum Type {
-            TOP_BORDER, BOTTOM_BORDER,
-            LEFT_BORDER, RIGHT_BORDER,
-            OTHER_SPRITE
-        }
+    // borders constants
+    public static final int TOP_BORDER = 0x1;
+    public static final int BOTTOM_BORDER = 0x2;
+    public static final int LEFT_BORDER = 0x3;
+    public static final int RIGHT_BORDER = 0x4;
 
-        private List<Type> types = new ArrayList<Type>();
-        private List<AbstractSprite> otherSprites = new ArrayList<AbstractSprite>();
-
-        public SpriteIntersection() {
-
-        }
-
-        public void addType(Type t) {
-            if (!types.contains(t)) types.add(t);
-        }
-
-        public boolean hasType(Type t) {
-            return types.contains(t);
-        }
-
-        public List<AbstractSprite> getOtherSprites() {
-            return otherSprites;
-        }
-
-        public void addOtherSprite(AbstractSprite otherSprite) {
-            otherSprites.add(otherSprite);
-        }
-
+    public enum Border {
+        TOP_BORDER, BOTTOM_BORDER,
+        LEFT_BORDER, RIGHT_BORDER
     }
 
     private Random rand = new Random();
@@ -141,25 +119,17 @@ public final class Game {
         playerSprite.setSpeedXY(x, y);
     }
 
-    public SpriteIntersection getIntersection(AbstractSprite sprite) {
-        SpriteIntersection ret = new SpriteIntersection();
+    public EnumSet<Border> getBorders(AbstractSprite sprite) {
+        EnumSet<Border> ret = EnumSet.noneOf(Border.class);
 
         if (sprite.getX() <= 0)
-            ret.addType(SpriteIntersection.Type.LEFT_BORDER);
+            ret.add(Border.LEFT_BORDER);
         else if (sprite.getX() + sprite.getWidth() >= getCanvasWidth())
-            ret.addType(SpriteIntersection.Type.RIGHT_BORDER);
+            ret.add(Border.RIGHT_BORDER);
         if (sprite.getY() <= 0)
-            ret.addType(SpriteIntersection.Type.TOP_BORDER);
+            ret.add(Border.TOP_BORDER);
         else if (sprite.getY() + sprite.getHeight() >= getCanvasHeight())
-            ret.addType(SpriteIntersection.Type.BOTTOM_BORDER);
-
-        for (AbstractSprite otherSprite : sprites) {
-            if (sprite == otherSprite) continue;
-            if (sprite.intersects(otherSprite)) {
-                ret.addType(SpriteIntersection.Type.OTHER_SPRITE);
-                ret.addOtherSprite(otherSprite);
-            }
-        }
+            ret.add(Border.BOTTOM_BORDER);
 
         return ret;
     }
@@ -185,6 +155,14 @@ public final class Game {
 
         // updating current sprites
         for (AbstractSprite sprite : sprites) sprite.update(sec);
+        for (int i = 0; i < sprites.size(); i++) {
+            for (int j = i + 1; j < sprites.size(); j++) {
+                if (sprites.get(i).intersects(sprites.get(j))) {
+                    sprites.get(i).performIntersection(sprites.get(j));
+                    sprites.get(j).performIntersection(sprites.get(i));
+                }
+            }
+        }
 
         // adding/removing sprites added/removed by current sprites
         sprites.addAll(spritesToAdd);
@@ -197,7 +175,7 @@ public final class Game {
         if (enemiesToGen > 0 && (now - lastEnemyGenTime) >= enemiesGenInterval) {
             EnemySprite enemy = new EnemySprite(this, 5, 1000);
             enemy.addGun(new ShooterSprite.Gun(enemy.getWidth() / 2, enemy.getHeight(), 0, 150));
-            //enemy.setShooting(1000);
+            enemy.setShooting(3000);
             enemy.setSpeedXY(0, 70);
             enemy.setXY(rand.nextInt(canvasWidth - (int) enemy.getWidth() - 1) + 1, 1);
 

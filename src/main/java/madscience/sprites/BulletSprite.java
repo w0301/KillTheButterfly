@@ -3,6 +3,7 @@ package madscience.sprites;
 import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.geom.Rectangle2D;
+import java.util.EnumSet;
 import madscience.Game;
 
 /**
@@ -40,19 +41,19 @@ public class BulletSprite extends MovableSprite {
     public void update(double sec) {
         super.update(sec);
 
-        Game.SpriteIntersection inter = game.getIntersection(this);
-        if (inter.hasType(Game.SpriteIntersection.Type.TOP_BORDER) ||
-            inter.hasType(Game.SpriteIntersection.Type.BOTTOM_BORDER) ||
-            inter.hasType(Game.SpriteIntersection.Type.LEFT_BORDER) ||
-            inter.hasType(Game.SpriteIntersection.Type.RIGHT_BORDER)) {
+        EnumSet<Game.Border> borders = game.getBorders(this);
+        if (borders.contains(Game.Border.TOP_BORDER) ||
+            borders.contains(Game.Border.BOTTOM_BORDER) ||
+            borders.contains(Game.Border.LEFT_BORDER) ||
+            borders.contains(Game.Border.RIGHT_BORDER)) {
             game.removeSprite(this);
         }
-        else if (inter.hasType(Game.SpriteIntersection.Type.OTHER_SPRITE)) {
-            for (AbstractSprite sprite : inter.getOtherSprites()) {
-                if (sprite.getClass() != owner.getClass() || sprite instanceof BulletSprite)
-                    game.removeSprite(this);
-            }
-        }
+    }
+
+    @Override
+    public void performIntersection(AbstractSprite sprite) {
+        if (sprite.getClass() != owner.getClass() || sprite instanceof BulletSprite)
+            game.removeSprite(this);
     }
 
     @Override
