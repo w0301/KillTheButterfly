@@ -108,14 +108,17 @@ public final class GameCanvas extends Canvas implements Runnable, ComponentListe
 
             if (ke.getKeyCode() == KeyEvent.VK_LEFT)
                 speedX = -game.getPlayerSetSpeed();
-            else if (ke.getKeyCode() == KeyEvent.VK_RIGHT)
+            if (ke.getKeyCode() == KeyEvent.VK_RIGHT)
                 speedX = game.getPlayerSetSpeed();
             if (ke.getKeyCode() == KeyEvent.VK_UP)
                 speedY = -game.getPlayerSetSpeed();
-            else if (ke.getKeyCode() == KeyEvent.VK_DOWN)
+            if (ke.getKeyCode() == KeyEvent.VK_DOWN)
                 speedY = game.getPlayerSetSpeed();
 
             game.setPlayerSpriteSpeedXY(speedX, speedY);
+
+            if (ke.getKeyCode() == KeyEvent.VK_SPACE)
+                game.getPlayerSprite().setShooting(200);
         }
     }
 
@@ -131,6 +134,9 @@ public final class GameCanvas extends Canvas implements Runnable, ComponentListe
                 speedY = 0;
 
             game.setPlayerSpriteSpeedXY(speedX, speedY);
+
+            if (ke.getKeyCode() == KeyEvent.VK_SPACE)
+                game.getPlayerSprite().setShooting(false);
         }
     }
 

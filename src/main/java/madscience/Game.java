@@ -6,6 +6,7 @@ import java.util.LinkedList;
 import java.util.List;
 import madscience.sprites.AbstractSprite;
 import madscience.sprites.PlayerSprite;
+import madscience.sprites.ShooterSprite;
 
 /**
  *
@@ -48,6 +49,9 @@ public final class Game {
     private List<AbstractSprite> sprites;
     private PlayerSprite playerSprite;
 
+    private List<AbstractSprite> spritesToAdd;
+    private List<AbstractSprite> spritesToRemove;
+
     private int canvasWidth = 0, canvasHeight = 0;
     private long lastUpdate = 0;
 
@@ -58,10 +62,17 @@ public final class Game {
         canvasWidth = width;
         canvasHeight = height;
 
-        playerSprite = new PlayerSprite(this, canvasWidth / 2, canvasHeight / 2);
+        playerSprite = new PlayerSprite(this);
+        playerSprite.setXY(canvasWidth / 2 - playerSprite.getWidth() / 2,
+                           canvasHeight / 2 - playerSprite.getHeight() / 2);
+        playerSprite.addGun(new ShooterSprite.Gun(playerSprite.getWidth() / 2, 0,
+                                                  0, -159));
 
         sprites = new LinkedList<AbstractSprite>();
         sprites.add(playerSprite);
+
+        spritesToAdd = new ArrayList<AbstractSprite>();
+        spritesToRemove = new ArrayList<AbstractSprite>();
     }
 
     public int getCanvasWidth() {
@@ -75,6 +86,10 @@ public final class Game {
     public void setCanvasSize(int width, int height) {
         canvasWidth = width;
         canvasHeight = height;
+    }
+
+    public PlayerSprite getPlayerSprite() {
+        return playerSprite;
     }
 
     public double getPlayerSetSpeed() {
@@ -121,10 +136,23 @@ public final class Game {
         return ret;
     }
 
+    public void addSprite(AbstractSprite sprite) {
+        spritesToAdd.add(sprite);
+    }
+
+    public void removeSprite(AbstractSprite sprite) {
+        spritesToRemove.add(sprite);
+    }
+
     public void update(double sec) {
         long now = System.currentTimeMillis();
         for (AbstractSprite sprite : sprites) sprite.update(sec);
 
+        sprites.addAll(spritesToAdd);
+        spritesToAdd.clear();
+
+        sprites.removeAll(spritesToRemove);
+        spritesToRemove.clear();
 
         lastUpdate = now;
     }

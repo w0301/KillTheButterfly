@@ -9,29 +9,28 @@ import madscience.Game;
  *
  * @author Richard Kakaš
  */
-public class PlayerSprite extends ShooterSprite {
+public class BulletSprite extends MovableSprite {
 
-    public PlayerSprite(Game game, double x, double y) {
+    public BulletSprite(Game game, double x, double y) {
         super(game, x, y);
     }
 
-    public PlayerSprite(Game game) {
+    public BulletSprite(Game game) {
         this(game, 0, 0);
     }
 
     @Override
     public double getWidth() {
-        return 15;
+        return 5;
     }
 
     @Override
     public double getHeight() {
-        return 30;
+        return 10;
     }
 
     @Override
     public void update(double sec) {
-        double beforeX = x, beforeY = y;
         super.update(sec);
 
         Game.SpriteIntersection inter = game.getIntersection(this);
@@ -39,16 +38,14 @@ public class PlayerSprite extends ShooterSprite {
             inter.hasType(Game.SpriteIntersection.Type.BOTTOM_BORDER) ||
             inter.hasType(Game.SpriteIntersection.Type.LEFT_BORDER) ||
             inter.hasType(Game.SpriteIntersection.Type.RIGHT_BORDER)) {
-            x = beforeX;
-            y = beforeY;
-            setSpeedXY(0, 0);
+            game.removeSprite(this);
         }
-
     }
 
     @Override
     public void draw(Graphics2D g) {
-        g.setColor(Color.RED);
+        g.setColor(Color.YELLOW);
+
         g.draw(new Rectangle2D.Double(x, y, getWidth(), getHeight()));
     }
 

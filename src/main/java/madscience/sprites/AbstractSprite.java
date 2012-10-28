@@ -25,6 +25,11 @@ public abstract class AbstractSprite {
         return y;
     }
 
+    public void setXY(double x, double y) {
+        this.x = x;
+        this.y = y;
+    }
+
     public abstract double getWidth();
     public abstract double getHeight();
 

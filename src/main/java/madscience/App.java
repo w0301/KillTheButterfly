@@ -1,6 +1,5 @@
 package madscience;
 
-import java.awt.BorderLayout;
 import java.awt.Dimension;
 import javax.swing.JFrame;
 
@@ -14,18 +13,22 @@ public class App {
         JFrame frame = new JFrame("MadScience");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
-        frame.getContentPane().setLayout(new BorderLayout());
-
+        // adding game canvas to frame
         GameCanvas canvas = new GameCanvas();
         canvas.setSize(new Dimension(480, 640));
-        frame.getContentPane().add(canvas, BorderLayout.CENTER);
+        frame.add(canvas);
         frame.pack();
 
         canvas.setVisible(true);
         canvas.setFocusable(true);
         frame.pack();
 
+        // centering frame on screen
+        frame.setLocationRelativeTo(null);
+
+        // showing frame to user
         frame.setVisible(true);
+        frame.setResizable(false);
     }
 
 }
