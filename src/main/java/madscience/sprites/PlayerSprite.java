@@ -44,6 +44,14 @@ public class PlayerSprite extends ShooterSprite {
             setSpeedXY(0, 0);
         }
 
+        if (inter.hasType(Game.SpriteIntersection.Type.OTHER_SPRITE)) {
+            for (AbstractSprite sprite : inter.getOtherSprites()) {
+                if (sprite instanceof BulletSprite &&
+                    ((BulletSprite) sprite).getOwner() != this)
+                    game.addPlayerLives(-1);
+            }
+        }
+
     }
 
     @Override

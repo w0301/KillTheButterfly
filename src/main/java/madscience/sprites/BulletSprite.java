@@ -11,12 +11,15 @@ import madscience.Game;
  */
 public class BulletSprite extends MovableSprite {
 
-    public BulletSprite(Game game, double x, double y) {
+    AbstractSprite owner;
+
+    public BulletSprite(Game game, double x, double y, AbstractSprite owner) {
         super(game, x, y);
+        this.owner = owner;
     }
 
-    public BulletSprite(Game game) {
-        this(game, 0, 0);
+    public BulletSprite(Game game, AbstractSprite owner) {
+        this(game, 0, 0, owner);
     }
 
     @Override
@@ -29,6 +32,10 @@ public class BulletSprite extends MovableSprite {
         return 10;
     }
 
+    public AbstractSprite getOwner() {
+        return owner;
+    }
+
     @Override
     public void update(double sec) {
         super.update(sec);
@@ -39,6 +46,12 @@ public class BulletSprite extends MovableSprite {
             inter.hasType(Game.SpriteIntersection.Type.LEFT_BORDER) ||
             inter.hasType(Game.SpriteIntersection.Type.RIGHT_BORDER)) {
             game.removeSprite(this);
+        }
+        else if (inter.hasType(Game.SpriteIntersection.Type.OTHER_SPRITE)) {
+            for (AbstractSprite sprite : inter.getOtherSprites()) {
+                if (sprite.getClass() != owner.getClass() || sprite instanceof BulletSprite)
+                    game.removeSprite(this);
+            }
         }
     }
 

@@ -30,8 +30,8 @@ public abstract class ShooterSprite extends MovableSprite {
             return y;
         }
 
-        public BulletSprite getBullet(Game game) {
-            BulletSprite bullet = new BulletSprite(game, x, y);
+        public BulletSprite getBullet(Game game, AbstractSprite owner) {
+            BulletSprite bullet = new BulletSprite(game, x, y, owner);
             bullet.setSpeedXY(bulletSpeedX, bulletSpeedY);
             return bullet;
         }
@@ -73,17 +73,18 @@ public abstract class ShooterSprite extends MovableSprite {
 
     @Override
     public void update(double sec) {
+        long now = System.currentTimeMillis();
         super.update(sec);
 
         // adding bullets
-        if (shooting && (System.currentTimeMillis() - lastShootTime) >= shootingInterval) {
+        if (shooting && (now - lastShootTime) >= shootingInterval) {
             for (Gun gun : guns) {
-                BulletSprite bullet = gun.getBullet(game);
+                BulletSprite bullet = gun.getBullet(game, this);
                 bullet.setXY(x + bullet.getX() - bullet.getWidth() / 2,
                              y + bullet.getY() - bullet.getHeight());
                 game.addSprite(bullet);
             }
-            lastShootTime = System.currentTimeMillis();
+            lastShootTime = now;
         }
     }
 
