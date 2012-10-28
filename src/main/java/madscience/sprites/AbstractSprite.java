@@ -11,7 +11,6 @@ public abstract class AbstractSprite {
     protected Game game;
     protected double x, y;
 
-
     public AbstractSprite(Game game, double x, double y) {
         this.game = game;
         this.x = x;

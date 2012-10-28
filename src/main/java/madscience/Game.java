@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import madscience.sprites.AbstractSprite;
+import madscience.sprites.PlayerSprite;
 
 /**
  *
@@ -45,10 +46,22 @@ public final class Game {
     }
 
     private List<AbstractSprite> sprites;
-    private int canvasWidth = 0, canvasHeight = 0;
+    private PlayerSprite playerSprite;
 
-    public Game() {
+    private int canvasWidth = 0, canvasHeight = 0;
+    private long lastUpdate = 0;
+
+    // pixels / second
+    private double playerSetSpeed = 100;
+
+    public Game(int width, int height) {
+        canvasWidth = width;
+        canvasHeight = height;
+
+        playerSprite = new PlayerSprite(this, canvasWidth / 2, canvasHeight / 2);
+
         sprites = new LinkedList<AbstractSprite>();
+        sprites.add(playerSprite);
     }
 
     public int getCanvasWidth() {
@@ -57,6 +70,31 @@ public final class Game {
 
     public int getCanvasHeight() {
         return canvasHeight;
+    }
+
+    public void setCanvasSize(int width, int height) {
+        canvasWidth = width;
+        canvasHeight = height;
+    }
+
+    public double getPlayerSetSpeed() {
+        return playerSetSpeed;
+    }
+
+    public void setPlayerSetSpeed(double playerSetSpeed) {
+        this.playerSetSpeed = playerSetSpeed;
+    }
+
+    public double getPlayerSpriteSpeedX() {
+        return playerSprite.getSpeedX();
+    }
+
+    public double getPlayerSpriteSpeedY() {
+        return playerSprite.getSpeedY();
+    }
+
+    public void setPlayerSpriteSpeedXY(double x, double y) {
+        playerSprite.setSpeedXY(x, y);
     }
 
     public SpriteIntersection getIntersection(AbstractSprite sprite) {
@@ -83,19 +121,16 @@ public final class Game {
         return ret;
     }
 
-    public void setCanvasSize(int width, int height) {
-        canvasWidth = width;
-        canvasHeight = height;
-    }
-
     public void update(double sec) {
+        long now = System.currentTimeMillis();
         for (AbstractSprite sprite : sprites) sprite.update(sec);
 
+
+        lastUpdate = now;
     }
 
     public void draw(Graphics2D g) {
         for (AbstractSprite sprite : sprites) sprite.draw(g);
-
     }
 
 }

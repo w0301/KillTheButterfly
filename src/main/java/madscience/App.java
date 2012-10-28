@@ -22,6 +22,7 @@ public class App {
         frame.pack();
 
         canvas.setVisible(true);
+        canvas.setFocusable(true);
         frame.pack();
 
         frame.setVisible(true);
