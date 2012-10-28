@@ -1,7 +1,9 @@
 package madscience;
 
 import java.awt.Canvas;
+import java.awt.Color;
 import java.awt.Graphics;
+import java.awt.Graphics2D;
 import java.awt.Toolkit;
 import java.awt.event.ComponentEvent;
 import java.awt.event.ComponentListener;
@@ -11,17 +13,19 @@ import java.awt.image.BufferStrategy;
  *
  * @author Richard Kakaš
  */
-public class GameCanvas extends Canvas implements Runnable, ComponentListener {
+public final class GameCanvas extends Canvas implements Runnable, ComponentListener {
 
-    BufferStrategy buffer;
+    private BufferStrategy buffer;
 
-    Thread loopThread;
-    boolean loopRunning = false;
+    private Thread loopThread;
+    private boolean loopRunning = false;
+
+    private Game game;
 
     public GameCanvas() {
+        setVisible(false);
         setIgnoreRepaint(true);
         addComponentListener(this);
-        setVisible(false);
     }
 
     protected void update(double sec) {
@@ -29,6 +33,11 @@ public class GameCanvas extends Canvas implements Runnable, ComponentListener {
     }
 
     protected void draw(Graphics g) {
+        g.setColor(Color.BLACK);
+        g.fillRect(0, 0, getWidth(), getHeight());
+
+        g.setColor(Color.RED);
+        g.drawRect(50, 50, 40, 40);
 
     }
 
@@ -69,7 +78,7 @@ public class GameCanvas extends Canvas implements Runnable, ComponentListener {
 
             lastRenderTime = now;
             while (now - lastRenderTime < TARGET_TIME_BETWEEN_RENDERS &&
-                now - lastUpdateTime < TIME_BETWEEN_UPDATES) {
+                   now - lastUpdateTime < TIME_BETWEEN_UPDATES) {
                 Thread.yield();
                 try {
                     Thread.sleep(1);
