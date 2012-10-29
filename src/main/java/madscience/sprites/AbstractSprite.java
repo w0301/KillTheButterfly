@@ -1,20 +1,32 @@
 package madscience.sprites;
 
 import java.awt.Graphics2D;
+import java.awt.geom.AffineTransform;
+import java.awt.image.BufferedImage;
 import madscience.Game;
 
 /**
  *
  * @author Richard Kakaš
  */
-public abstract class AbstractSprite {
-    protected Game game;
-    protected double x, y;
+public abstract class AbstractSprite implements Cloneable {
+    protected final Game game;
+    protected final BufferedImage image;
+    protected double x = 0, y = 0;
 
-    public AbstractSprite(Game game, double x, double y) {
+    public AbstractSprite(Game game, BufferedImage image) {
         this.game = game;
-        this.x = x;
-        this.y = y;
+        this.image = image;
+    }
+
+    @Override
+    public AbstractSprite clone() {
+        Object ret = null;
+        try {
+            ret = super.clone();
+        }
+        catch(CloneNotSupportedException e) { }
+        return (AbstractSprite) ret;
     }
 
     public double getX() {
@@ -30,8 +42,13 @@ public abstract class AbstractSprite {
         this.y = y;
     }
 
-    public abstract double getWidth();
-    public abstract double getHeight();
+    public double getWidth() {
+        return image.getWidth();
+    }
+
+    public double getHeight() {
+        return image.getHeight();
+    }
 
     public boolean containsPoint(double px, double py) {
         return px >= x && px <= x + getWidth() &&
@@ -47,6 +64,11 @@ public abstract class AbstractSprite {
 
     public abstract void update(double sec);
     public abstract void performIntersection(AbstractSprite sprite);
-    public abstract void draw(Graphics2D g);
+
+    public void draw(Graphics2D g) {
+        AffineTransform af = new AffineTransform();
+        af.translate(x, y);
+        g.drawImage(image, af, null);
+    }
 
 }

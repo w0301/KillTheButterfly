@@ -177,7 +177,7 @@ public final class GameCanvas extends Canvas implements Runnable, ComponentListe
             loopRunning = true;
             loopThread.start();
         }
-        startGame(new Game(getWidth(), getHeight()));
+        startGame(GameFactory.createGame(getWidth(), getHeight(), 1));
     }
 
     public void componentHidden(ComponentEvent ce) {

@@ -1,5 +1,6 @@
 package madscience.sprites;
 
+import java.awt.image.BufferedImage;
 import madscience.Game;
 
 /**
@@ -9,8 +10,8 @@ import madscience.Game;
 public abstract class MovableSprite extends AbstractSprite {
     protected double speedX = 0, speedY = 0;
 
-    public MovableSprite(Game game, double x, double y) {
-        super(game, x, y);
+    public MovableSprite(Game game, BufferedImage image) {
+        super(game, image);
     }
 
     public double getSpeedX() {

@@ -2,9 +2,13 @@ package madscience;
 
 import java.awt.Graphics2D;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import madscience.sprites.AbstractSprite;
 import madscience.sprites.EnemySprite;
@@ -37,13 +41,24 @@ public final class Game {
     private int playerLives = MAX_PLAYER_LIVES;
 
     // enemy generations
+    private static class EnemyPossibility {
+        public double probability;
+        public EnemySprite enemy;
+
+        public EnemyPossibility(double probability, EnemySprite enemy) {
+            this.probability = probability;
+            this.enemy = enemy;
+        }
+    }
+
     private int enemiesToGen = 5;
-    private int enemiesGenInterval = 2000;
-    private long lastEnemyGenTime = 0;
+    private double enemiesGenInterval = 2000;
+    private double tillEnemyGen = enemiesGenInterval;
+    private List<EnemyPossibility> possibleEnemies = new ArrayList<EnemyPossibility>();
 
     // pixels / second
-    private double playerSetSpeed = 100;
-    private double playerBulletSpeed = 150;
+    private double playerSetSpeed = 175;
+    private double playerBulletSpeed = playerSetSpeed + 50;
 
     // sprites
     private List<AbstractSprite> sprites;
@@ -58,7 +73,7 @@ public final class Game {
 
         playerSprite = new PlayerSprite(this);
         playerSprite.setXY(canvasWidth / 2 - playerSprite.getWidth() / 2,
-                           canvasHeight / 2 - playerSprite.getHeight() / 2);
+                           canvasHeight - playerSprite.getHeight() * 2);
         playerSprite.addGun(new ShooterSprite.Gun(playerSprite.getWidth() / 2, 0,
                                                   0, -playerBulletSpeed));
 
@@ -150,9 +165,27 @@ public final class Game {
         spritesToRemove.add(sprite);
     }
 
-    public void update(double sec) {
-        long now = System.currentTimeMillis();
+    public void addPossibleEnemy(double prob, EnemySprite enemy) {
+        possibleEnemies.add(new EnemyPossibility(prob, enemy));
+        Collections.sort(possibleEnemies, new Comparator<EnemyPossibility>() {
+            @Override
+            public int compare(EnemyPossibility t, EnemyPossibility t1) {
+                return (int) (t.probability - t1.probability + 0.5);
+            }
 
+        });
+    }
+
+    public void setEnemiesToGen(int val) {
+        enemiesToGen = val;
+    }
+
+    public void setEnemiesGenInterval(double val) {
+        enemiesGenInterval = val;
+        tillEnemyGen = val;
+    }
+
+    public void update(double sec) {
         // updating current sprites
         for (AbstractSprite sprite : sprites) sprite.update(sec);
         for (int i = 0; i < sprites.size(); i++) {
@@ -167,21 +200,30 @@ public final class Game {
         // adding/removing sprites added/removed by current sprites
         sprites.addAll(spritesToAdd);
         spritesToAdd.clear();
-
         sprites.removeAll(spritesToRemove);
         spritesToRemove.clear();
 
-        // adding auto generated sprites
-        if (enemiesToGen > 0 && (now - lastEnemyGenTime) >= enemiesGenInterval) {
-            EnemySprite enemy = new EnemySprite(this, 5, 1000);
-            enemy.addGun(new ShooterSprite.Gun(enemy.getWidth() / 2, enemy.getHeight(), 0, 150));
-            enemy.setShooting(3000);
-            enemy.setSpeedXY(0, 70);
-            enemy.setXY(rand.nextInt(canvasWidth - (int) enemy.getWidth() - 1) + 1, 1);
+        // adding auto generated enemies
+        tillEnemyGen -= sec * 1000;
+        if (enemiesToGen > 0 && tillEnemyGen <= 0) {
+            EnemySprite enemy = null;
 
-            sprites.add(enemy);
-            enemiesToGen--;
-            lastEnemyGenTime = now;
+            double cumulativeProbability = 0.0;
+            double randomProbability = rand.nextDouble();
+            for (EnemyPossibility enPos : possibleEnemies) {
+                cumulativeProbability += enPos.probability;
+                if (randomProbability <= cumulativeProbability) {
+                    enemy = (EnemySprite) enPos.enemy.clone();
+                    break;
+                }
+            }
+            if (enemy != null) {
+                enemy.setXY(rand.nextInt(canvasWidth - (int) enemy.getWidth() - 1) + 1, 1);
+                enemy.setDescendingTime(1000 + 400*rand.nextInt(10));
+                sprites.add(enemy);
+                enemiesToGen--;
+                tillEnemyGen = enemiesGenInterval;
+            }
         }
     }
 

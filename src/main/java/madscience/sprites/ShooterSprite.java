@@ -1,6 +1,6 @@
 package madscience.sprites;
 
-import java.awt.Graphics2D;
+import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.List;
 import madscience.Game;
@@ -31,7 +31,8 @@ public abstract class ShooterSprite extends MovableSprite {
         }
 
         public BulletSprite getBullet(Game game, AbstractSprite owner) {
-            BulletSprite bullet = new BulletSprite(game, x, y, owner);
+            BulletSprite bullet = new BulletSprite(game, owner);
+            bullet.setXY(x, y);
             bullet.setSpeedXY(bulletSpeedX, bulletSpeedY);
             return bullet;
         }
@@ -45,13 +46,9 @@ public abstract class ShooterSprite extends MovableSprite {
     long shootingInterval = 0;
     long lastShootTime = 0;
 
-    public ShooterSprite(Game game, double x, double y) {
-        super(game, x, y);
+    public ShooterSprite(Game game, BufferedImage image) {
+        super(game, image);
         this.guns = new ArrayList<Gun>();
-    }
-
-    public ShooterSprite(Game game) {
-        this(game, 0, 0);
     }
 
     public void addGun(Gun gun) {
@@ -80,8 +77,11 @@ public abstract class ShooterSprite extends MovableSprite {
         if (shooting && (now - lastShootTime) >= shootingInterval) {
             for (Gun gun : guns) {
                 BulletSprite bullet = gun.getBullet(game, this);
-                bullet.setXY(x + bullet.getX() - bullet.getWidth() / 2,
-                             y + bullet.getY() - bullet.getHeight());
+                double newX = x + bullet.getX() - bullet.getWidth() / 2;
+                double newY = y + bullet.getY();
+                if (bullet.getSpeedY() < 0) newY -= bullet.getHeight();
+
+                bullet.setXY(newX, newY);
                 game.addSprite(bullet);
             }
             lastShootTime = now;
