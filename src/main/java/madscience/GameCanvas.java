@@ -4,12 +4,15 @@ import java.awt.Canvas;
 import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
+import java.awt.RenderingHints;
 import java.awt.Toolkit;
 import java.awt.event.ComponentEvent;
 import java.awt.event.ComponentListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.image.BufferStrategy;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  *
@@ -24,7 +27,8 @@ public final class GameCanvas extends Canvas implements Runnable, ComponentListe
     private boolean gamePaused = false;
     private boolean gameEnded = false;
 
-    private Game game;
+    private Set<Integer> pressedKeys = new HashSet<Integer>();
+    private Game game = null;
 
     public GameCanvas() {
         setVisible(false);
@@ -71,6 +75,7 @@ public final class GameCanvas extends Canvas implements Runnable, ComponentListe
         }
     }
 
+    @Override
     public void run() {
         final double GAME_HERTZ = 30.0;
         final double TIME_BETWEEN_UPDATES = 1000000000 / GAME_HERTZ;
@@ -121,53 +126,64 @@ public final class GameCanvas extends Canvas implements Runnable, ComponentListe
         }
     }
 
+    public void donePressedKeys() {
+        synchronized(this) {
+            double speedX = 0;
+            double speedY = 0;
+
+            for (Integer key : pressedKeys) {
+                switch (key) {
+                    case KeyEvent.VK_LEFT:
+                        speedX = -game.getPlayerSetSpeed();
+                        break;
+                    case KeyEvent.VK_RIGHT:
+                        speedX = game.getPlayerSetSpeed();
+                        break;
+                    case KeyEvent.VK_UP:
+                        speedY = -game.getPlayerSetSpeed();
+                        break;
+                    case KeyEvent.VK_DOWN:
+                        speedY = game.getPlayerSetSpeed();
+                        break;
+                }
+            }
+            game.setPlayerSpriteSpeedXY(speedX, speedY);
+        }
+    }
+
+    @Override
     public void keyTyped(KeyEvent ke) {
     }
 
-    public void keyPressed(KeyEvent ke) {
+    @Override
+    public synchronized void keyPressed(KeyEvent ke) {
+        pressedKeys.add(ke.getKeyCode());
+
         if (game == null) return;
-        synchronized(this) {
-            double speedX = game.getPlayerSpriteSpeedX();
-            double speedY = game.getPlayerSpriteSpeedY();
-
-            if (ke.getKeyCode() == KeyEvent.VK_LEFT)
-                speedX = -game.getPlayerSetSpeed();
-            else if (ke.getKeyCode() == KeyEvent.VK_RIGHT)
-                speedX = game.getPlayerSetSpeed();
-            else if (ke.getKeyCode() == KeyEvent.VK_UP)
-                speedY = -game.getPlayerSetSpeed();
-            else if (ke.getKeyCode() == KeyEvent.VK_DOWN)
-                speedY = game.getPlayerSetSpeed();
-            else if (ke.getKeyCode() == KeyEvent.VK_SPACE)
-                game.getPlayerSprite().setShooting(200);
-
-            game.setPlayerSpriteSpeedXY(speedX, speedY);
-        }
+        donePressedKeys();
+        if (ke.getKeyCode() == KeyEvent.VK_SHIFT)
+            game.togglePlayerShooting();
     }
 
-    public void keyReleased(KeyEvent ke) {
+    @Override
+    public synchronized void keyReleased(KeyEvent ke) {
+        pressedKeys.remove(ke.getKeyCode());
+
         if (game == null) return;
-        synchronized(this) {
-            double speedX = game.getPlayerSpriteSpeedX();
-            double speedY = game.getPlayerSpriteSpeedY();
-
-            if (ke.getKeyCode() == KeyEvent.VK_LEFT || ke.getKeyCode() == KeyEvent.VK_RIGHT)
-                speedX = 0;
-            else if (ke.getKeyCode() == KeyEvent.VK_UP || ke.getKeyCode() == KeyEvent.VK_DOWN)
-                speedY = 0;
-            else if (ke.getKeyCode() == KeyEvent.VK_SPACE)
-                game.getPlayerSprite().setShooting(false);
-
-            game.setPlayerSpriteSpeedXY(speedX, speedY);
-        }
+        donePressedKeys();
+        if (ke.getKeyCode() == KeyEvent.VK_SHIFT)
+            game.togglePlayerShooting();
     }
 
+    @Override
     public void componentResized(ComponentEvent ce) {
     }
 
+    @Override
     public void componentMoved(ComponentEvent ce) {
     }
 
+    @Override
     public void componentShown(ComponentEvent ce) {
         createBufferStrategy(2);
         buffer = getBufferStrategy();
@@ -180,6 +196,7 @@ public final class GameCanvas extends Canvas implements Runnable, ComponentListe
         startGame(GameFactory.createGame(getWidth(), getHeight(), 1));
     }
 
+    @Override
     public void componentHidden(ComponentEvent ce) {
         if (loopThread == null) return;
         loopRunning = false;

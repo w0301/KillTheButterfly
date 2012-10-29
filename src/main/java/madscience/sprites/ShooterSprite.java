@@ -44,7 +44,7 @@ public abstract class ShooterSprite extends MovableSprite {
 
     // in miliseconds
     long shootingInterval = 0;
-    long lastShootTime = 0;
+    double shootInTime = 0;
 
     public ShooterSprite(Game game, BufferedImage image) {
         super(game, image);
@@ -63,18 +63,13 @@ public abstract class ShooterSprite extends MovableSprite {
         this.shooting = shooting;
     }
 
-    public void setShooting(long interval) {
-        setShooting(true);
+    public void setShootingInterval(long interval) {
         shootingInterval = interval;
+        shootInTime = 0;
     }
 
-    @Override
-    public void update(double sec) {
-        long now = System.currentTimeMillis();
-        super.update(sec);
-
-        // adding bullets
-        if (shooting && (now - lastShootTime) >= shootingInterval) {
+    public synchronized boolean shoot() {
+        if (shootInTime <= 0) {
             for (Gun gun : guns) {
                 BulletSprite bullet = gun.getBullet(game, this);
                 double newX = x + bullet.getX() - bullet.getWidth() / 2;
@@ -84,8 +79,19 @@ public abstract class ShooterSprite extends MovableSprite {
                 bullet.setXY(newX, newY);
                 game.addSprite(bullet);
             }
-            lastShootTime = now;
+            shootInTime = shootingInterval;
+            return true;
         }
+        return false;
+    }
+
+    @Override
+    public void update(double sec) {
+        super.update(sec);
+
+        // adding bullets
+        if (shooting) shoot();
+        if (shootInTime > 0) shootInTime -= sec * 1000;
     }
 
 }

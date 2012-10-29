@@ -76,6 +76,7 @@ public final class Game {
                            canvasHeight - playerSprite.getHeight() * 2);
         playerSprite.addGun(new ShooterSprite.Gun(playerSprite.getWidth() / 2, 0,
                                                   0, -playerBulletSpeed));
+        playerSprite.setShootingInterval(200);
 
         sprites = new LinkedList<AbstractSprite>();
         sprites.add(playerSprite);
@@ -132,6 +133,11 @@ public final class Game {
 
     public void setPlayerSpriteSpeedXY(double x, double y) {
         playerSprite.setSpeedXY(x, y);
+    }
+
+    public void togglePlayerShooting() {
+        if (playerSprite.isShooting()) playerSprite.setShooting(false);
+        else playerSprite.setShooting(true);
     }
 
     public EnumSet<Border> getBorders(AbstractSprite sprite) {
