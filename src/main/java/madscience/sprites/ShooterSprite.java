@@ -104,4 +104,12 @@ public abstract class ShooterSprite extends MovableSprite {
         if (shootInTime > 0) shootInTime -= sec * 1000;
     }
 
+    @Override
+    public void performAdded() {
+    }
+
+    @Override
+    public void performRemoved() {
+    }
+
 }

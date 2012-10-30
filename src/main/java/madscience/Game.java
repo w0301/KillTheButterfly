@@ -9,6 +9,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
 import madscience.sprites.AbstractSprite;
+import madscience.sprites.BossSprite;
 import madscience.sprites.EnemySprite;
 import madscience.sprites.PlayerSprite;
 import madscience.sprites.ShooterSprite;
@@ -45,6 +46,7 @@ public final class Game {
     }
 
     private int enemiesToGen = 5;
+    private int lastEnemiesCount = 0;
     private double enemiesGenInterval = 2000;
     private double tillEnemyGen = enemiesGenInterval;
     private List<EnemyPossibility> possibleEnemies = new ArrayList<EnemyPossibility>();
@@ -54,9 +56,15 @@ public final class Game {
     private double playerSetSpeed = 175;
     private double playerBulletSpeed = 150;
 
+    // player options
+    private long playerShootingInterval = 250;
+
     // sprites
     private List<AbstractSprite> sprites;
     private PlayerSprite playerSprite;
+
+    private boolean bossAdded = false;
+    private BossSprite bossSprite = null;
 
     private List<AbstractSprite> spritesToAdd;
     private List<AbstractSprite> spritesToRemove;
@@ -66,11 +74,11 @@ public final class Game {
         canvasHeight = height;
 
         playerSprite = new PlayerSprite(this);
-        playerSprite.setXY(playerSprite.getWidth() * 0.5,
+        playerSprite.setXY(playerSprite.getWidth() * 1.25,
                            canvasHeight / 2 - playerSprite.getHeight() / 2);
         playerSprite.addGun(new ShooterSprite.Gun(playerSprite.getWidth(), playerSprite.getHeight() / 2,
                                                   playerBulletSpeed, 0));
-        playerSprite.setShootingInterval(200);
+        playerSprite.setShootingInterval(playerShootingInterval);
 
         sprites = new LinkedList<AbstractSprite>();
         sprites.add(playerSprite);
@@ -123,9 +131,8 @@ public final class Game {
         playerSprite.setShooting(val);
     }
 
-    public void togglePlayerShooting() {
-        if (playerSprite.isShooting()) playerSprite.setShooting(false);
-        else playerSprite.setShooting(true);
+    public void setBossSprite(BossSprite sprite) {
+        bossSprite = sprite;
     }
 
     public EnumSet<Border> getBorders(AbstractSprite sprite) {
@@ -153,11 +160,11 @@ public final class Game {
     }
 
     public boolean isLost() {
-        return playerSprite.getLives() <= -1;
+        return playerSprite.getLives() <= 0;
     }
 
     public boolean isWon() {
-        return enemiesToGen == 0 && sprites.size() == 1;
+        return enemiesToGen == 0 && bossSprite == null && lastEnemiesCount == 0;
     }
 
     public void addSprite(AbstractSprite sprite) {
@@ -190,7 +197,12 @@ public final class Game {
 
     public void update(double sec) {
         // updating current sprites
-        for (AbstractSprite sprite : sprites) sprite.update(sec);
+        lastEnemiesCount = 0;
+        for (AbstractSprite sprite : sprites) {
+            sprite.update(sec);
+            if (sprite instanceof EnemySprite) lastEnemiesCount++;
+        }
+
         for (int i = 0; i < sprites.size(); i++) {
             for (int j = i + 1; j < sprites.size(); j++) {
                 if (sprites.get(i).intersects(sprites.get(j)) ||
@@ -200,13 +212,6 @@ public final class Game {
                 }
             }
         }
-
-
-        // adding/removing sprites added/removed by current sprites
-        sprites.addAll(spritesToAdd);
-        spritesToAdd.clear();
-        sprites.removeAll(spritesToRemove);
-        spritesToRemove.clear();
 
         // adding auto generated enemies
         tillEnemyGen -= sec * 1000;
@@ -224,14 +229,35 @@ public final class Game {
             }
             if (enemy != null) {
                 enemy.setXY(canvasWidth - enemy.getWidth() - 1,
-                            rand.nextInt(canvasHeight - (int) enemy.getHeight() - 1) + 1); // 30
+                            rand.nextInt(canvasHeight - (int) enemy.getHeight() - 1) + 1);
                 enemy.setSpeedXY(-gameSpeed, 0);
 
-                sprites.add(enemy);
+                addSprite(enemy);
                 enemiesToGen--;
                 tillEnemyGen = enemiesGenInterval;
             }
         }
+        else if (enemiesToGen == 0 && tillEnemyGen <= 0 && bossSprite != null && !bossAdded && lastEnemiesCount == 0) {
+            bossSprite.setXY(canvasWidth, canvasHeight / 2 - bossSprite.getHeight() / 2);
+            bossSprite.setOscillation(canvasHeight / 2 - bossSprite.getHeight() / 2, 20);
+            bossSprite.setSpeedXY(-gameSpeed, 0);
+
+            addSprite(bossSprite);
+            bossAdded = true;
+        }
+
+        // adding/removing sprites added/removed
+        for (AbstractSprite sprite : spritesToAdd) {
+            sprites.add(sprite);
+            sprite.performAdded();
+        }
+        spritesToAdd.clear();
+
+        for (AbstractSprite sprite : spritesToRemove) {
+            sprites.remove(sprite);
+            sprite.performRemoved();
+        }
+        spritesToRemove.clear();
     }
 
     public void draw(Graphics2D g) {

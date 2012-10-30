@@ -55,4 +55,12 @@ public class BulletSprite extends MovableSprite {
             game.removeSprite(this);
     }
 
+    @Override
+    public void performAdded() {
+    }
+
+    @Override
+    public void performRemoved() {
+    }
+
 }

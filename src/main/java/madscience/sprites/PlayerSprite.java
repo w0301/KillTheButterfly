@@ -12,7 +12,7 @@ import madscience.Game;
  * @author Richard Kakaš
  */
 public class PlayerSprite extends ShooterSprite {
-    public static final int MAX_LIVES = 3;
+    public static final int MAX_LIVES = 5;
     public static final BufferedImage DEFAULT_IMG;
 
     static {

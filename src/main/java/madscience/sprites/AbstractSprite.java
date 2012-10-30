@@ -62,6 +62,9 @@ public abstract class AbstractSprite implements Cloneable {
                containsPoint(sprite.x, sprite.y + sprite.getHeight());
     }
 
+    public abstract void performAdded();
+    public abstract void performRemoved();
+
     public abstract void update(double sec);
     public abstract void performIntersection(AbstractSprite sprite);
 
