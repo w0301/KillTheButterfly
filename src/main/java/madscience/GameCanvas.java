@@ -81,30 +81,17 @@ public final class GameCanvas extends Canvas implements Runnable, ComponentListe
 
     @Override
     public void run() {
-        final double GAME_HERTZ = 60.0;
-        final double TIME_BETWEEN_UPDATES = 1000000000 / GAME_HERTZ;
-        final int MAX_UPDATES_BEFORE_RENDER = 5;
+        final int TARGET_FPS = 60;
+        final long OPTIMAL_TIME = 1000000000 / TARGET_FPS;
 
-        final double TARGET_FPS = 60;
-        final double TARGET_TIME_BETWEEN_RENDERS = 1000000000 / TARGET_FPS;
-
-        long lastUpdateTime = System.nanoTime();
-        long lastRenderTime = System.nanoTime();
+        long lastLoopTime = System.nanoTime();
 
         while (loopRunning) {
             long now = System.nanoTime();
-            int updateCount = 0;
+            double delta = now - lastLoopTime;
+            lastLoopTime = now;
 
-            while (now - lastUpdateTime > TIME_BETWEEN_UPDATES && updateCount < MAX_UPDATES_BEFORE_RENDER) {
-                double elapsed = (now - lastUpdateTime) / 1000000000.0;
-                update(elapsed);
-
-                lastUpdateTime += TIME_BETWEEN_UPDATES;
-                updateCount++;
-            }
-            if (now - lastUpdateTime > TIME_BETWEEN_UPDATES) {
-               lastUpdateTime = (long) (now - TIME_BETWEEN_UPDATES);
-            }
+            update(delta / 1000000000);
 
             Graphics g = null;
             try {
@@ -114,24 +101,17 @@ public final class GameCanvas extends Canvas implements Runnable, ComponentListe
             finally {
                 if (g != null) g.dispose();
             }
-
             if (!buffer.contentsLost()) buffer.show();
             Toolkit.getDefaultToolkit().sync();
 
-            lastRenderTime = now;
-            while (now - lastRenderTime < TARGET_TIME_BETWEEN_RENDERS &&
-                   now - lastUpdateTime < TIME_BETWEEN_UPDATES) {
-                Thread.yield();
-                try {
-                    Thread.sleep(1);
-                }
-                catch(Exception e) { }
-                now = System.nanoTime();
+            try {
+                Thread.sleep((lastLoopTime - System.nanoTime() + OPTIMAL_TIME) / 1000000);
             }
+            catch(Exception e) { }
         }
     }
 
-    public void donePressedKeys() {
+    public synchronized void donePressedKeys() {
         double speedX = 0;
         double speedY = 0;
 

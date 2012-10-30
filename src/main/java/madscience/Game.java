@@ -52,7 +52,7 @@ public final class Game {
     // pixels / second
     private double gameSpeed = 100;
     private double playerSetSpeed = 175;
-    private double playerBulletSpeed = playerSetSpeed + 50;
+    private double playerBulletSpeed = 150;
 
     // sprites
     private List<AbstractSprite> sprites;
@@ -191,21 +191,16 @@ public final class Game {
     public void update(double sec) {
         // updating current sprites
         for (AbstractSprite sprite : sprites) sprite.update(sec);
-
-        // adding/removing sprites added/removed by current sprites
-        sprites.addAll(spritesToAdd);
-        spritesToAdd.clear();
-        sprites.removeAll(spritesToRemove);
-        spritesToRemove.clear();
-
         for (int i = 0; i < sprites.size(); i++) {
             for (int j = i + 1; j < sprites.size(); j++) {
-                if (sprites.get(i).intersects(sprites.get(j))) {
+                if (sprites.get(i).intersects(sprites.get(j)) ||
+                    sprites.get(j).intersects(sprites.get(i))) {
                     sprites.get(i).performIntersection(sprites.get(j));
                     sprites.get(j).performIntersection(sprites.get(i));
                 }
             }
         }
+
 
         // adding/removing sprites added/removed by current sprites
         sprites.addAll(spritesToAdd);
