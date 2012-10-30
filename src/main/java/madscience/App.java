@@ -19,7 +19,7 @@ public class App {
 
                 // adding game canvas to frame
                 GameCanvas canvas = new GameCanvas();
-                canvas.setSize(new Dimension(480, 640));
+                canvas.setSize(new Dimension(800, 600));
                 frame.add(canvas);
                 frame.pack();
 

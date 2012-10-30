@@ -72,9 +72,19 @@ public abstract class ShooterSprite extends MovableSprite {
         if (shootInTime <= 0) {
             for (Gun gun : guns) {
                 BulletSprite bullet = gun.getBullet(game, this);
-                double newX = x + bullet.getX() - bullet.getWidth() / 2;
+                double newX = x + bullet.getX();
                 double newY = y + bullet.getY();
                 if (bullet.getSpeedY() < 0) newY -= bullet.getHeight();
+                if (bullet.getSpeedY() != 0) newX -= bullet.getWidth() / 2;
+
+                if (bullet.getSpeedX() < 0) newX -= bullet.getWidth();
+                if (bullet.getSpeedX() != 0) newY -= bullet.getHeight() / 2;
+
+                double newSpeedX = bullet.getSpeedX();
+                double newSpeedY = bullet.getSpeedY();
+                if (newSpeedX != 0) newSpeedX += getSpeedX();
+                if (newSpeedY != 0) newSpeedY += getSpeedX();
+                bullet.setSpeedXY(newSpeedX, newSpeedY);
 
                 bullet.setXY(newX, newY);
                 game.addSprite(bullet);

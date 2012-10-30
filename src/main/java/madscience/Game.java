@@ -5,10 +5,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.EnumSet;
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 import java.util.Random;
 import madscience.sprites.AbstractSprite;
 import madscience.sprites.EnemySprite;
@@ -20,17 +18,13 @@ import madscience.sprites.ShooterSprite;
  * @author Richard Kakaš
  */
 public final class Game {
-    public static final int MAX_PLAYER_LIVES = 3;
 
     // borders constants
-    public static final int TOP_BORDER = 0x1;
-    public static final int BOTTOM_BORDER = 0x2;
-    public static final int LEFT_BORDER = 0x3;
-    public static final int RIGHT_BORDER = 0x4;
-
     public enum Border {
-        TOP_BORDER, BOTTOM_BORDER,
-        LEFT_BORDER, RIGHT_BORDER
+        TOP_BORDER, TOP_BORDER_CROSSED,
+        BOTTOM_BORDER, BOTTOM_BORDER_CROSSED,
+        LEFT_BORDER, LEFT_BORDER_CROSSED,
+        RIGHT_BORDER, RIGHT_BORDER_CROSSED
     }
 
     private Random rand = new Random();
@@ -38,7 +32,6 @@ public final class Game {
 
     // game info
     private int playerScore = 0;
-    private int playerLives = MAX_PLAYER_LIVES;
 
     // enemy generations
     private static class EnemyPossibility {
@@ -57,6 +50,7 @@ public final class Game {
     private List<EnemyPossibility> possibleEnemies = new ArrayList<EnemyPossibility>();
 
     // pixels / second
+    private double gameSpeed = 100;
     private double playerSetSpeed = 175;
     private double playerBulletSpeed = playerSetSpeed + 50;
 
@@ -72,10 +66,10 @@ public final class Game {
         canvasHeight = height;
 
         playerSprite = new PlayerSprite(this);
-        playerSprite.setXY(canvasWidth / 2 - playerSprite.getWidth() / 2,
-                           canvasHeight - playerSprite.getHeight() * 2);
-        playerSprite.addGun(new ShooterSprite.Gun(playerSprite.getWidth() / 2, 0,
-                                                  0, -playerBulletSpeed));
+        playerSprite.setXY(playerSprite.getWidth() * 0.5,
+                           canvasHeight / 2 - playerSprite.getHeight() / 2);
+        playerSprite.addGun(new ShooterSprite.Gun(playerSprite.getWidth(), playerSprite.getHeight() / 2,
+                                                  playerBulletSpeed, 0));
         playerSprite.setShootingInterval(200);
 
         sprites = new LinkedList<AbstractSprite>();
@@ -99,16 +93,6 @@ public final class Game {
 
     public void addPlayerScore(int score) {
         playerScore += score;
-    }
-
-    public int getPlayerLives() {
-        return playerLives;
-    }
-
-    public void addPlayerLives(int lives) {
-        playerLives += lives;
-        if (playerLives > MAX_PLAYER_LIVES)
-            playerLives = MAX_PLAYER_LIVES;
     }
 
     public PlayerSprite getPlayerSprite() {
@@ -135,6 +119,10 @@ public final class Game {
         playerSprite.setSpeedXY(x, y);
     }
 
+    public void setPlayerShooting(boolean val) {
+        playerSprite.setShooting(val);
+    }
+
     public void togglePlayerShooting() {
         if (playerSprite.isShooting()) playerSprite.setShooting(false);
         else playerSprite.setShooting(true);
@@ -152,11 +140,20 @@ public final class Game {
         else if (sprite.getY() + sprite.getHeight() >= getCanvasHeight())
             ret.add(Border.BOTTOM_BORDER);
 
+        if (sprite.getX() + sprite.getWidth() <= 0)
+            ret.add(Border.LEFT_BORDER_CROSSED);
+        else if (sprite.getX() >= getCanvasWidth())
+            ret.add(Border.RIGHT_BORDER_CROSSED);
+        if (sprite.getY() + sprite.getHeight() <= 0)
+            ret.add(Border.TOP_BORDER_CROSSED);
+        else if (sprite.getY() >= getCanvasHeight())
+            ret.add(Border.BOTTOM_BORDER_CROSSED);
+
         return ret;
     }
 
     public boolean isLost() {
-        return playerLives <= -1;
+        return playerSprite.getLives() <= -1;
     }
 
     public boolean isWon() {
@@ -194,6 +191,13 @@ public final class Game {
     public void update(double sec) {
         // updating current sprites
         for (AbstractSprite sprite : sprites) sprite.update(sec);
+
+        // adding/removing sprites added/removed by current sprites
+        sprites.addAll(spritesToAdd);
+        spritesToAdd.clear();
+        sprites.removeAll(spritesToRemove);
+        spritesToRemove.clear();
+
         for (int i = 0; i < sprites.size(); i++) {
             for (int j = i + 1; j < sprites.size(); j++) {
                 if (sprites.get(i).intersects(sprites.get(j))) {
@@ -224,8 +228,10 @@ public final class Game {
                 }
             }
             if (enemy != null) {
-                enemy.setXY(rand.nextInt(canvasWidth - (int) enemy.getWidth() - 1) + 1, 1);
-                enemy.setDescendingTime(1000 + 400*rand.nextInt(10));
+                enemy.setXY(canvasWidth - enemy.getWidth() - 1,
+                            rand.nextInt(canvasHeight - (int) enemy.getHeight() - 1) + 1); // 30
+                enemy.setSpeedXY(-gameSpeed, 0);
+
                 sprites.add(enemy);
                 enemiesToGen--;
                 tillEnemyGen = enemiesGenInterval;

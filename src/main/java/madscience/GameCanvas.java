@@ -23,6 +23,7 @@ public final class GameCanvas extends Canvas implements Runnable, ComponentListe
     private BufferStrategy buffer;
 
     private Thread loopThread;
+    private final Object loopLock = new Object();
     private boolean loopRunning = false;
     private boolean gamePaused = false;
     private boolean gameEnded = false;
@@ -38,7 +39,7 @@ public final class GameCanvas extends Canvas implements Runnable, ComponentListe
     }
 
     public void startGame(Game newGame) {
-        synchronized (this) {
+        synchronized (loopLock) {
             game = newGame;
             gamePaused = false;
             gameEnded = false;
@@ -46,19 +47,22 @@ public final class GameCanvas extends Canvas implements Runnable, ComponentListe
     }
 
     public void pauseGame(boolean val) {
-        synchronized (this) {
+        synchronized (loopLock) {
             gamePaused = val;
         }
     }
 
     protected void update(double sec) {
         if (game != null) {
-            synchronized (this) {
+            synchronized (loopLock) {
                 if (!gamePaused && !gameEnded) {
                     if (game.isWon() || game.isLost()) {
                         gameEnded = true;
                     }
-                    game.update(sec);
+                    else {
+                        game.update(sec);
+                        donePressedKeys();
+                    }
                 }
             }
         }
@@ -69,7 +73,7 @@ public final class GameCanvas extends Canvas implements Runnable, ComponentListe
         g.fillRect(0, 0, getWidth(), getHeight());
 
         if (game != null) {
-            synchronized (this) {
+            synchronized (loopLock) {
                 game.draw((Graphics2D) g);
             }
         }
@@ -77,7 +81,7 @@ public final class GameCanvas extends Canvas implements Runnable, ComponentListe
 
     @Override
     public void run() {
-        final double GAME_HERTZ = 30.0;
+        final double GAME_HERTZ = 60.0;
         final double TIME_BETWEEN_UPDATES = 1000000000 / GAME_HERTZ;
         final int MAX_UPDATES_BEFORE_RENDER = 5;
 
@@ -93,11 +97,13 @@ public final class GameCanvas extends Canvas implements Runnable, ComponentListe
 
             while (now - lastUpdateTime > TIME_BETWEEN_UPDATES && updateCount < MAX_UPDATES_BEFORE_RENDER) {
                 double elapsed = (now - lastUpdateTime) / 1000000000.0;
-
                 update(elapsed);
 
                 lastUpdateTime += TIME_BETWEEN_UPDATES;
                 updateCount++;
+            }
+            if (now - lastUpdateTime > TIME_BETWEEN_UPDATES) {
+               lastUpdateTime = (long) (now - TIME_BETWEEN_UPDATES);
             }
 
             Graphics g = null;
@@ -120,35 +126,31 @@ public final class GameCanvas extends Canvas implements Runnable, ComponentListe
                     Thread.sleep(1);
                 }
                 catch(Exception e) { }
-
                 now = System.nanoTime();
             }
         }
     }
 
     public void donePressedKeys() {
-        synchronized(this) {
-            double speedX = 0;
-            double speedY = 0;
+        double speedX = 0;
+        double speedY = 0;
 
-            for (Integer key : pressedKeys) {
-                switch (key) {
-                    case KeyEvent.VK_LEFT:
-                        speedX = -game.getPlayerSetSpeed();
-                        break;
-                    case KeyEvent.VK_RIGHT:
-                        speedX = game.getPlayerSetSpeed();
-                        break;
-                    case KeyEvent.VK_UP:
-                        speedY = -game.getPlayerSetSpeed();
-                        break;
-                    case KeyEvent.VK_DOWN:
-                        speedY = game.getPlayerSetSpeed();
-                        break;
-                }
+        boolean isSpace = false;
+        for (Integer key : pressedKeys) {
+            switch (key) {
+                case KeyEvent.VK_UP:
+                    speedY = -game.getPlayerSetSpeed();
+                    break;
+                case KeyEvent.VK_DOWN:
+                    speedY = game.getPlayerSetSpeed();
+                    break;
+                case KeyEvent.VK_SPACE:
+                    isSpace = true;
+                    break;
             }
-            game.setPlayerSpriteSpeedXY(speedX, speedY);
         }
+        game.setPlayerSpriteSpeedXY(speedX, speedY);
+        game.setPlayerShooting(isSpace);
     }
 
     @Override
@@ -158,21 +160,11 @@ public final class GameCanvas extends Canvas implements Runnable, ComponentListe
     @Override
     public synchronized void keyPressed(KeyEvent ke) {
         pressedKeys.add(ke.getKeyCode());
-
-        if (game == null) return;
-        donePressedKeys();
-        if (ke.getKeyCode() == KeyEvent.VK_SHIFT)
-            game.togglePlayerShooting();
     }
 
     @Override
     public synchronized void keyReleased(KeyEvent ke) {
         pressedKeys.remove(ke.getKeyCode());
-
-        if (game == null) return;
-        donePressedKeys();
-        if (ke.getKeyCode() == KeyEvent.VK_SHIFT)
-            game.togglePlayerShooting();
     }
 
     @Override

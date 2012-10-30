@@ -15,7 +15,7 @@ public class BulletSprite extends MovableSprite {
     public static final BufferedImage DEFAULT_IMG;
 
     static {
-        DEFAULT_IMG = new BufferedImage(5, 10, BufferedImage.TYPE_INT_ARGB);
+        DEFAULT_IMG = new BufferedImage(10, 5, BufferedImage.TYPE_INT_ARGB);
         Graphics2D g = DEFAULT_IMG.createGraphics();
         g.setColor(Color.YELLOW);
         g.draw(new Rectangle2D.Double(0, 0, DEFAULT_IMG.getWidth() - 1, DEFAULT_IMG.getHeight() - 1));

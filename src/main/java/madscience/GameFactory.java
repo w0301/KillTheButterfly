@@ -21,21 +21,20 @@ public class GameFactory {
 
         EnemySprite enemy1 = new EnemySprite(newGame, EnemySprite.DEFAULT_IMG_1, 1);
         enemy1.setSpeedXY(0, 75);
-        enemy1.addGun(new ShooterSprite.Gun(enemy1.getWidth() / 2, enemy1.getHeight(), 0, 100));
+        enemy1.addGun(new ShooterSprite.Gun(0, enemy1.getHeight() / 2, -100, 0));
         enemy1.setShootingInterval(5000);
         enemy1.setShooting(true);
 
         EnemySprite enemy2 = new EnemySprite(newGame, EnemySprite.DEFAULT_IMG_2, 2);
         enemy2.setSpeedXY(0, 75);
-        enemy2.addGun(new ShooterSprite.Gun(enemy2.getWidth() / 2, enemy2.getHeight(), 0, 130));
+        enemy2.addGun(new ShooterSprite.Gun(0, enemy2.getHeight() / 2, -130, 0));
         enemy2.setShootingInterval(4000);
         enemy2.setShooting(true);
 
         EnemySprite enemy3 = new EnemySprite(newGame, EnemySprite.DEFAULT_IMG_3, 3);
         enemy3.setSpeedXY(0, 75);
-        enemy3.addGun(new ShooterSprite.Gun(enemy3.getWidth() / 4, enemy3.getHeight(), 0, 130));
-        enemy3.addGun(new ShooterSprite.Gun(enemy3.getWidth() / 4 + enemy3.getWidth() / 2,
-                                            enemy3.getHeight(), 0, 130));
+        enemy3.addGun(new ShooterSprite.Gun(0, enemy3.getHeight() / 4, -130, 0));
+        enemy3.addGun(new ShooterSprite.Gun(0, enemy3.getHeight() / 4 + enemy3.getHeight() / 2, -130, 0));
         enemy3.setShootingInterval(3500);
         enemy3.setShooting(true);
 
