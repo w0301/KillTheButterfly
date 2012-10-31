@@ -14,6 +14,7 @@ import java.awt.event.KeyListener;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferStrategy;
+import java.awt.image.BufferedImage;
 import java.util.HashSet;
 import java.util.Set;
 import madscience.sprites.PlayerSprite;
@@ -25,8 +26,21 @@ import madscience.sprites.PlayerSprite;
 public final class GameCanvas extends Canvas implements Runnable, ComponentListener, KeyListener {
     private static final double LIFE_INDICATOR_WIDTH = 275;
     private static final double LIFE_INDICATOR_MARGIN = 6;
+    private static final BufferedImage BACKGROUND_BLOCK_IMG;
+
+    static {
+        BACKGROUND_BLOCK_IMG = new BufferedImage(50, 50, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g = BACKGROUND_BLOCK_IMG.createGraphics();
+        g.setColor(Color.BLACK);
+        g.fillRect(0, 0, BACKGROUND_BLOCK_IMG.getWidth(), BACKGROUND_BLOCK_IMG.getHeight());
+        g.setColor(Color.GRAY);
+        g.drawRect(3, 3, BACKGROUND_BLOCK_IMG.getWidth() - 3, BACKGROUND_BLOCK_IMG.getHeight() - 3);
+    }
 
     private BufferStrategy buffer;
+
+    private BufferedImage backgroundImg;
+    private double backgroundOffset = 0;
 
     private Thread loopThread;
     private final Object loopLock = new Object();
@@ -58,6 +72,7 @@ public final class GameCanvas extends Canvas implements Runnable, ComponentListe
             game = newGame;
             gamePaused = false;
             gameEnded = false;
+            backgroundOffset = 0;
         }
     }
 
@@ -84,6 +99,12 @@ public final class GameCanvas extends Canvas implements Runnable, ComponentListe
                         gameEnded = true;
                     }
                     else {
+                        // updating backgorund
+                        backgroundOffset -= game.getGameSpeed() * sec;
+                        if (Math.abs(backgroundOffset) >= BACKGROUND_BLOCK_IMG.getWidth())
+                            backgroundOffset = 0;
+
+                        // updating sprites
                         game.update(sec);
                         donePressedKeys();
                     }
@@ -100,49 +121,46 @@ public final class GameCanvas extends Canvas implements Runnable, ComponentListe
         g.setColor(Color.BLUE);
         g.fillRect(0, 0, getWidth(), getHeight() - getGameHeight());
 
+        // life indicator for player
         double onePlayerLifeWidth = LIFE_INDICATOR_WIDTH / PlayerSprite.MAX_LIVES;
         int currPlayerLives = (game == null) ? 0 : game.getPlayerSprite().getLives();
         g.setColor(Color.RED);
-        for (int i = 0; i < currPlayerLives; i++) {
-            g.fill(new Rectangle2D.Double(i*onePlayerLifeWidth + LIFE_INDICATOR_MARGIN,
-                                          LIFE_INDICATOR_MARGIN,
-                                          onePlayerLifeWidth,
-                                          getHeight() - getGameHeight() - 2*LIFE_INDICATOR_MARGIN));
-        }
+        g.fill(new Rectangle2D.Double(LIFE_INDICATOR_MARGIN, LIFE_INDICATOR_MARGIN,
+                                      onePlayerLifeWidth * currPlayerLives,
+                                      getHeight() - getGameHeight() - 2*LIFE_INDICATOR_MARGIN));
 
+        // life indicator for boss
         int bossMaxLives = (game == null) ? 1 : game.getBossMaxLives();
         if (bossMaxLives == 0) bossMaxLives = 1;
         double oneBossLifeWidth = LIFE_INDICATOR_WIDTH / bossMaxLives;
         int currBossLives = (game == null || game.getBossSprite() == null) ? 0 :
                                     game.getBossSprite().getLives();
         g.setColor(Color.RED);
-        for (int i = 0; i < currBossLives; i++) {
-            g.fill(new Rectangle2D.Double(getWidth() - LIFE_INDICATOR_WIDTH - LIFE_INDICATOR_MARGIN + i*oneBossLifeWidth,
-                                          LIFE_INDICATOR_MARGIN,
-                                          oneBossLifeWidth,
-                                          getHeight() - getGameHeight() - 2*LIFE_INDICATOR_MARGIN));
-        }
+        g.fill(new Rectangle2D.Double(getWidth() - oneBossLifeWidth * currBossLives - LIFE_INDICATOR_MARGIN,
+                                      LIFE_INDICATOR_MARGIN,
+                                      oneBossLifeWidth * currBossLives,
+                                      getHeight() - getGameHeight() - 2*LIFE_INDICATOR_MARGIN));
 
-        int score = (game == null) ? 0 : game.getPlayerScore();
-        String scoreStr = Integer.toString(score);
+        // score indicator
+        String scoreStr = Integer.toString((game == null) ? 0 : game.getPlayerScore());
         g.setColor(Color.WHITE);
         g.setFont(new Font(null, 0, getHeight() - getGameHeight()));
         FontMetrics fontMetrics = g.getFontMetrics();
-
         g.drawString(scoreStr, getWidth() / 2.0f - fontMetrics.stringWidth(scoreStr) / 2,
                                9.0f*(getHeight() - getGameHeight()) / 10.0f);
 
-        g.setColor(Color.BLACK);
-        g.fillRect(0, getHeight() - getGameHeight(), getGameWidth(), getGameHeight());
-
-        AffineTransform af = g.getTransform();
+        // game backgorund and sprites
         g.translate(0, getHeight() - getGameHeight());
+
+        AffineTransform bgAf = new AffineTransform();
+        bgAf.translate(backgroundOffset, 0);
+        g.drawImage(backgroundImg, bgAf, null);
+
         if (game != null) {
             synchronized (loopLock) {
                 game.draw(g);
             }
         }
-        g.setTransform(af);
     }
 
     @Override
@@ -226,11 +244,24 @@ public final class GameCanvas extends Canvas implements Runnable, ComponentListe
         createBufferStrategy(2);
         buffer = getBufferStrategy();
 
+        int bgXCount = (int) (((double) getGameWidth()) / ((double) BACKGROUND_BLOCK_IMG.getWidth()) + 1.5);
+        int bgYCount = (int) (((double) getGameHeight()) / ((double) BACKGROUND_BLOCK_IMG.getHeight()) + 0.5);
+        backgroundImg = new BufferedImage(BACKGROUND_BLOCK_IMG.getWidth() * bgXCount,
+                                          BACKGROUND_BLOCK_IMG.getHeight() * bgYCount, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g = backgroundImg.createGraphics();
+        for (int y = 0; y < bgYCount; y++) {
+            for (int x = 0; x < bgXCount; x++) {
+                g.drawImage(BACKGROUND_BLOCK_IMG, null, x * BACKGROUND_BLOCK_IMG.getWidth(),
+                                                        y * BACKGROUND_BLOCK_IMG.getHeight());
+            }
+        }
+
         if (loopThread == null || loopThread.getState() == Thread.State.TERMINATED) {
             loopThread = new Thread(this);
             loopRunning = true;
             loopThread.start();
         }
+
         startNextGame();
     }
 

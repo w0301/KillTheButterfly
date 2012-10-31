@@ -1,6 +1,8 @@
 package madscience;
 
+import java.awt.Color;
 import java.awt.Graphics2D;
+import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -17,7 +19,8 @@ import madscience.sprites.ShooterSprite;
 
 /*
  * TODO:
- *  - moving background
+ *  - generating more enemies at once
+ *  - some elixirs
  *  - Menu for game canvas
  */
 
@@ -307,7 +310,6 @@ public final class Game {
 
             addSprite(bossSprite);
             bossAdded = true;
-            setGameSpeed(0);
         }
 
         // generation elixirs
