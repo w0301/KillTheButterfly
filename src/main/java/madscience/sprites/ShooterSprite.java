@@ -46,8 +46,8 @@ public abstract class ShooterSprite extends MovableSprite {
     long shootingInterval = 0;
     double shootInTime = 0;
 
-    public ShooterSprite(Game game, BufferedImage image) {
-        super(game, image);
+    public ShooterSprite(Game game, SpriteView view) {
+        super(game, view);
         this.guns = new ArrayList<Gun>();
     }
 

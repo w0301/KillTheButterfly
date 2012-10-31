@@ -30,7 +30,7 @@ public class BossSprite extends EnemySprite {
 
     @Override
     public boolean canOscillate() {
-        return x <= game.getCanvasWidth() - game.getCanvasWidth() / 2.5;
+        return x <= game.getCanvasWidth() - game.getCanvasWidth() / 3;
     }
 
     @Override

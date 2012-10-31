@@ -39,9 +39,13 @@ public class EnemySprite extends ShooterSprite {
     double oscillationAmpl = 30;
     double oscillationPeriod = 3;
 
-    public EnemySprite(Game game, BufferedImage image, int lives) {
-        super(game, image);
+    public EnemySprite(Game game, SpriteView view, int lives) {
+        super(game, view);
         this.lives = lives;
+    }
+
+    public EnemySprite(Game game, BufferedImage image, int lives) {
+        this(game, new SpriteView(image), lives);
     }
 
     public EnemySprite(Game game, int lives) {

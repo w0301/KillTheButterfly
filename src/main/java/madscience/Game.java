@@ -10,9 +10,17 @@ import java.util.List;
 import java.util.Random;
 import madscience.sprites.AbstractSprite;
 import madscience.sprites.BossSprite;
+import madscience.sprites.ElixirSprite;
 import madscience.sprites.EnemySprite;
 import madscience.sprites.PlayerSprite;
 import madscience.sprites.ShooterSprite;
+
+/*
+ * TODO:
+ *  - lives/score view on canvas
+ *  - moving background
+ *  - Menu for game canvas
+ */
 
 /**
  *
@@ -28,20 +36,20 @@ public final class Game {
         RIGHT_BORDER, RIGHT_BORDER_CROSSED
     }
 
-    private Random rand = new Random();
+    private static Random rand = new Random();
     private int canvasWidth = 0, canvasHeight = 0;
 
     // game info
     private int playerScore = 0;
 
-    // enemy generations
-    private static class EnemyPossibility {
+    // enemy and other sprites generations
+    private static class SpritePossibility {
         public double probability;
-        public EnemySprite enemy;
+        public AbstractSprite sprite;
 
-        public EnemyPossibility(double probability, EnemySprite enemy) {
+        public SpritePossibility(double probability, AbstractSprite sprite) {
             this.probability = probability;
-            this.enemy = enemy;
+            this.sprite = sprite;
         }
     }
 
@@ -49,7 +57,11 @@ public final class Game {
     private int lastEnemiesCount = 0;
     private double enemiesGenInterval = 2000;
     private double tillEnemyGen = enemiesGenInterval;
-    private List<EnemyPossibility> possibleEnemies = new ArrayList<EnemyPossibility>();
+    private List<SpritePossibility> possibleEnemies = new ArrayList<SpritePossibility>();
+
+    private double elixirsGenInterval = 5000;
+    private double tillElixirGen = elixirsGenInterval;
+    private List<SpritePossibility> possibleElixirs = new ArrayList<SpritePossibility>();
 
     // pixels / second
     private double gameSpeed = 100;
@@ -57,6 +69,7 @@ public final class Game {
     private double playerBulletSpeed = 150;
 
     // player options
+    private double playerAnimInterval = 100;
     private long playerShootingInterval = 250;
 
     // sprites
@@ -69,6 +82,29 @@ public final class Game {
     private List<AbstractSprite> spritesToAdd;
     private List<AbstractSprite> spritesToRemove;
 
+    private static void addPossibleSprite(List<SpritePossibility> list, SpritePossibility spr) {
+        list.add(spr);
+        Collections.sort(list, new Comparator<SpritePossibility>() {
+            @Override
+            public int compare(SpritePossibility t, SpritePossibility t1) {
+                return (int) (t.probability - t1.probability + 0.5);
+            }
+
+        });
+    }
+
+    private static AbstractSprite pickPossibleSprite(List<SpritePossibility> list) {
+        double cumulativeProbability = 0.0;
+        double randomProbability = rand.nextDouble();
+        for (SpritePossibility spritePos : list) {
+            cumulativeProbability += spritePos.probability;
+            if (randomProbability <= cumulativeProbability) {
+                return spritePos.sprite.clone();
+            }
+        }
+        return null;
+    }
+
     public Game(int width, int height) {
         canvasWidth = width;
         canvasHeight = height;
@@ -79,6 +115,9 @@ public final class Game {
         playerSprite.addGun(new ShooterSprite.Gun(playerSprite.getWidth(), playerSprite.getHeight() / 2,
                                                   playerBulletSpeed, 0));
         playerSprite.setShootingInterval(playerShootingInterval);
+        playerSprite.addAnimationView(PlayerSprite.DEFAULT_VIEW);
+        playerSprite.addAnimationView(PlayerSprite.DEFAULT_VIEW_1);
+        playerSprite.runAnimation(playerAnimInterval);
 
         sprites = new LinkedList<AbstractSprite>();
         sprites.add(playerSprite);
@@ -176,14 +215,12 @@ public final class Game {
     }
 
     public void addPossibleEnemy(double prob, EnemySprite enemy) {
-        possibleEnemies.add(new EnemyPossibility(prob, enemy));
-        Collections.sort(possibleEnemies, new Comparator<EnemyPossibility>() {
-            @Override
-            public int compare(EnemyPossibility t, EnemyPossibility t1) {
-                return (int) (t.probability - t1.probability + 0.5);
-            }
+        addPossibleSprite(possibleEnemies, new SpritePossibility(prob, enemy));
+    }
 
-        });
+    public void setEnemyGeneration(int count, double interval) {
+        enemiesToGen = count;
+        enemiesGenInterval = tillEnemyGen = interval;
     }
 
     public void setEnemiesToGen(int val) {
@@ -193,6 +230,14 @@ public final class Game {
     public void setEnemiesGenInterval(double val) {
         enemiesGenInterval = val;
         tillEnemyGen = val;
+    }
+
+    public void addPossibleElixir(double prob, ElixirSprite elixir) {
+        addPossibleSprite(possibleElixirs, new SpritePossibility(prob, elixir));
+    }
+
+    public void setElixirGeneration(double interval) {
+        elixirsGenInterval = tillElixirGen = interval;
     }
 
     public void update(double sec) {
@@ -216,18 +261,10 @@ public final class Game {
         // adding auto generated enemies
         tillEnemyGen -= sec * 1000;
         if (enemiesToGen > 0 && tillEnemyGen <= 0) {
-            EnemySprite enemy = null;
+            AbstractSprite sprite = pickPossibleSprite(possibleEnemies);
 
-            double cumulativeProbability = 0.0;
-            double randomProbability = rand.nextDouble();
-            for (EnemyPossibility enPos : possibleEnemies) {
-                cumulativeProbability += enPos.probability;
-                if (randomProbability <= cumulativeProbability) {
-                    enemy = (EnemySprite) enPos.enemy.clone();
-                    break;
-                }
-            }
-            if (enemy != null) {
+            if (sprite != null && sprite instanceof EnemySprite) {
+                EnemySprite enemy = (EnemySprite) sprite;
                 enemy.setXY(canvasWidth - enemy.getWidth() - 1,
                             rand.nextInt(canvasHeight - (int) enemy.getHeight() - 1) + 1);
                 enemy.setSpeedXY(-gameSpeed, 0);
@@ -244,6 +281,22 @@ public final class Game {
 
             addSprite(bossSprite);
             bossAdded = true;
+        }
+
+        // generation elixirs
+        tillElixirGen -= sec * 1000;
+        if (tillElixirGen <= 0) {
+            AbstractSprite sprite = pickPossibleSprite(possibleElixirs);
+
+            if (sprite != null && sprite instanceof ElixirSprite) {
+                ElixirSprite elixir = (ElixirSprite) sprite;
+                elixir.setXY(canvasWidth - elixir.getWidth() - 1,
+                             rand.nextInt(canvasHeight - (int) elixir.getHeight() - 1) + 1);
+                elixir.setSpeedXY(-gameSpeed, 0);
+
+                addSprite(elixir);
+                tillElixirGen = elixirsGenInterval;
+            }
         }
 
         // adding/removing sprites added/removed

@@ -23,8 +23,13 @@ public class BulletSprite extends MovableSprite {
 
     AbstractSprite owner;
 
+    public BulletSprite(Game game, AbstractSprite owner, SpriteView view) {
+        super(game, view);
+        this.owner = owner;
+    }
+
     public BulletSprite(Game game, AbstractSprite owner, BufferedImage image) {
-        super(game, image);
+        super(game, new SpriteView(image));
         this.owner = owner;
     }
 

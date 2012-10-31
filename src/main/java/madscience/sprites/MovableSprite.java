@@ -10,8 +10,8 @@ import madscience.Game;
 public abstract class MovableSprite extends AbstractSprite {
     protected double speedX = 0, speedY = 0;
 
-    public MovableSprite(Game game, BufferedImage image) {
-        super(game, image);
+    public MovableSprite(Game game, SpriteView view) {
+        super(game, view);
     }
 
     public double getSpeedX() {
@@ -29,6 +29,8 @@ public abstract class MovableSprite extends AbstractSprite {
 
     @Override
     public void update(double sec) {
+        super.update(sec);
+
         // no collision detection here!!! => implement it in subclass
         x += speedX * sec;
         y += speedY * sec;
