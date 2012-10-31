@@ -2,23 +2,29 @@ package madscience;
 
 import java.awt.Canvas;
 import java.awt.Color;
+import java.awt.Font;
+import java.awt.FontMetrics;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
-import java.awt.RenderingHints;
 import java.awt.Toolkit;
 import java.awt.event.ComponentEvent;
 import java.awt.event.ComponentListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
+import java.awt.geom.AffineTransform;
+import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferStrategy;
 import java.util.HashSet;
 import java.util.Set;
+import madscience.sprites.PlayerSprite;
 
 /**
  *
  * @author Richard Kakaš
  */
 public final class GameCanvas extends Canvas implements Runnable, ComponentListener, KeyListener {
+    private static final double LIFE_INDICATOR_WIDTH = 275;
+    private static final double LIFE_INDICATOR_MARGIN = 6;
 
     private BufferStrategy buffer;
 
@@ -30,6 +36,7 @@ public final class GameCanvas extends Canvas implements Runnable, ComponentListe
 
     private Set<Integer> pressedKeys = new HashSet<Integer>();
     private Game game = null;
+    private int nextGameLevel = 1;
 
     public GameCanvas() {
         setVisible(false);
@@ -38,12 +45,29 @@ public final class GameCanvas extends Canvas implements Runnable, ComponentListe
         addKeyListener(this);
     }
 
+    public int getGameWidth() {
+        return getWidth();
+    }
+
+    public int getGameHeight() {
+        return getHeight() - 25;
+    }
+
     public void startGame(Game newGame) {
         synchronized (loopLock) {
             game = newGame;
             gamePaused = false;
             gameEnded = false;
         }
+    }
+
+    public void startNextGame() {
+        int score = 0;
+        if (game == null || game.isLost()) nextGameLevel = 1;
+        else score = game.getPlayerScore();
+        Game newGame = GameFactory.createGame(getGameWidth(), getGameHeight(), nextGameLevel++);
+        newGame.addPlayerScore(score);
+        startGame(newGame);
     }
 
     public void pauseGame(boolean val) {
@@ -64,19 +88,61 @@ public final class GameCanvas extends Canvas implements Runnable, ComponentListe
                         donePressedKeys();
                     }
                 }
+                else if (gameEnded) {
+                    startNextGame();
+                }
             }
         }
     }
 
-    protected void draw(Graphics g) {
-        g.setColor(Color.BLACK);
-        g.fillRect(0, 0, getWidth(), getHeight());
+    protected void draw(Graphics gAbs) {
+        Graphics2D g = (Graphics2D) gAbs;
+        g.setColor(Color.BLUE);
+        g.fillRect(0, 0, getWidth(), getHeight() - getGameHeight());
 
+        double onePlayerLifeWidth = LIFE_INDICATOR_WIDTH / PlayerSprite.MAX_LIVES;
+        int currPlayerLives = (game == null) ? 0 : game.getPlayerSprite().getLives();
+        g.setColor(Color.RED);
+        for (int i = 0; i < currPlayerLives; i++) {
+            g.fill(new Rectangle2D.Double(i*onePlayerLifeWidth + LIFE_INDICATOR_MARGIN,
+                                          LIFE_INDICATOR_MARGIN,
+                                          onePlayerLifeWidth,
+                                          getHeight() - getGameHeight() - 2*LIFE_INDICATOR_MARGIN));
+        }
+
+        int bossMaxLives = (game == null) ? 1 : game.getBossMaxLives();
+        if (bossMaxLives == 0) bossMaxLives = 1;
+        double oneBossLifeWidth = LIFE_INDICATOR_WIDTH / bossMaxLives;
+        int currBossLives = (game == null || game.getBossSprite() == null) ? 0 :
+                                    game.getBossSprite().getLives();
+        g.setColor(Color.RED);
+        for (int i = 0; i < currBossLives; i++) {
+            g.fill(new Rectangle2D.Double(getWidth() - LIFE_INDICATOR_WIDTH - LIFE_INDICATOR_MARGIN + i*oneBossLifeWidth,
+                                          LIFE_INDICATOR_MARGIN,
+                                          oneBossLifeWidth,
+                                          getHeight() - getGameHeight() - 2*LIFE_INDICATOR_MARGIN));
+        }
+
+        int score = (game == null) ? 0 : game.getPlayerScore();
+        String scoreStr = Integer.toString(score);
+        g.setColor(Color.WHITE);
+        g.setFont(new Font(null, 0, getHeight() - getGameHeight()));
+        FontMetrics fontMetrics = g.getFontMetrics();
+
+        g.drawString(scoreStr, getWidth() / 2.0f - fontMetrics.stringWidth(scoreStr) / 2,
+                               9.0f*(getHeight() - getGameHeight()) / 10.0f);
+
+        g.setColor(Color.BLACK);
+        g.fillRect(0, getHeight() - getGameHeight(), getGameWidth(), getGameHeight());
+
+        AffineTransform af = g.getTransform();
+        g.translate(0, getHeight() - getGameHeight());
         if (game != null) {
             synchronized (loopLock) {
-                game.draw((Graphics2D) g);
+                game.draw(g);
             }
         }
+        g.setTransform(af);
     }
 
     @Override
@@ -165,7 +231,7 @@ public final class GameCanvas extends Canvas implements Runnable, ComponentListe
             loopRunning = true;
             loopThread.start();
         }
-        startGame(GameFactory.createGame(getWidth(), getHeight(), 1));
+        startNextGame();
     }
 
     @Override

@@ -17,7 +17,6 @@ import madscience.sprites.ShooterSprite;
 
 /*
  * TODO:
- *  - lives/score view on canvas
  *  - moving background
  *  - Menu for game canvas
  */
@@ -78,6 +77,7 @@ public final class Game {
 
     private boolean bossAdded = false;
     private BossSprite bossSprite = null;
+    private int bossMaxLives = 0;
 
     private List<AbstractSprite> spritesToAdd;
     private List<AbstractSprite> spritesToRemove;
@@ -115,9 +115,7 @@ public final class Game {
         playerSprite.addGun(new ShooterSprite.Gun(playerSprite.getWidth(), playerSprite.getHeight() / 2,
                                                   playerBulletSpeed, 0));
         playerSprite.setShootingInterval(playerShootingInterval);
-        playerSprite.addAnimationView(PlayerSprite.DEFAULT_VIEW);
-        playerSprite.addAnimationView(PlayerSprite.DEFAULT_VIEW_1);
-        playerSprite.runAnimation(playerAnimInterval);
+        refreshPlayerView();
 
         sprites = new LinkedList<AbstractSprite>();
         sprites.add(playerSprite);
@@ -142,12 +140,31 @@ public final class Game {
         playerScore += score;
     }
 
+    public double getGameSpeed() {
+        return gameSpeed;
+    }
+
+    public void setGameSpeed(double gameSpeed) {
+        this.gameSpeed = gameSpeed;
+        refreshPlayerView();
+    }
+
     public PlayerSprite getPlayerSprite() {
         return playerSprite;
     }
 
     public double getPlayerSetSpeed() {
         return playerSetSpeed;
+    }
+
+    public void refreshPlayerView() {
+        playerSprite.setDefaultView(PlayerSprite.DEFAULT_VIEW);
+        if (gameSpeed != 0) {
+            playerSprite.addAnimationView(PlayerSprite.DEFAULT_VIEW);
+            playerSprite.addAnimationView(PlayerSprite.DEFAULT_VIEW_1);
+            playerSprite.runAnimation(playerAnimInterval);
+        }
+        else playerSprite.clearAnimation();
     }
 
     public void setPlayerSetSpeed(double playerSetSpeed) {
@@ -170,8 +187,17 @@ public final class Game {
         playerSprite.setShooting(val);
     }
 
+    public BossSprite getBossSprite() {
+        return bossSprite;
+    }
+
+    public int getBossMaxLives() {
+        return bossMaxLives;
+    }
+
     public void setBossSprite(BossSprite sprite) {
         bossSprite = sprite;
+        if (sprite != null) bossMaxLives = sprite.getLives();
     }
 
     public EnumSet<Border> getBorders(AbstractSprite sprite) {
@@ -281,6 +307,7 @@ public final class Game {
 
             addSprite(bossSprite);
             bossAdded = true;
+            setGameSpeed(0);
         }
 
         // generation elixirs

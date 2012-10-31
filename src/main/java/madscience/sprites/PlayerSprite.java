@@ -44,6 +44,7 @@ public class PlayerSprite extends ShooterSprite {
     }
 
     private int lives = MAX_LIVES;
+    private boolean shield = false;
 
     public PlayerSprite(Game game, SpriteView view) {
         super(game, view);
@@ -61,10 +62,23 @@ public class PlayerSprite extends ShooterSprite {
         return lives;
     }
 
-    public void addLives(int val) {
-        lives += val;
+    public boolean hasShield() {
+        return shield;
+    }
+
+    public void setShield(boolean val) {
+        shield = val;
+    }
+
+    public void addLife() {
+        lives += 1;
         if (lives > MAX_LIVES)
             lives = MAX_LIVES;
+    }
+
+    public void removeLife() {
+        if (shield) shield = false;
+        else lives -= 1;
     }
 
     @Override
@@ -87,7 +101,7 @@ public class PlayerSprite extends ShooterSprite {
     public void performIntersection(AbstractSprite sprite) {
         if ( (sprite instanceof BulletSprite && ((BulletSprite) sprite).getOwner() != this) ||
              (sprite instanceof EnemySprite) )
-            addLives(-1);
+            removeLife();
     }
 
 }

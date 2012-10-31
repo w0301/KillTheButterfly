@@ -34,6 +34,7 @@ public class EnemySprite extends ShooterSprite {
     }
 
     int lives;
+    int startLives;
     double oscillationCenter = 0;
     double oscillationTime = -1;
     double oscillationAmpl = 30;
@@ -41,7 +42,7 @@ public class EnemySprite extends ShooterSprite {
 
     public EnemySprite(Game game, SpriteView view, int lives) {
         super(game, view);
-        this.lives = lives;
+        this.lives = this.startLives = lives;
     }
 
     public EnemySprite(Game game, BufferedImage image, int lives) {
@@ -50,6 +51,10 @@ public class EnemySprite extends ShooterSprite {
 
     public EnemySprite(Game game, int lives) {
         this(game, DEFAULT_IMG_1, lives);
+    }
+
+    public int getLives() {
+        return lives;
     }
 
     public void setOscillationAmplitude(double ampl) {
@@ -117,7 +122,10 @@ public class EnemySprite extends ShooterSprite {
     public void performIntersection(AbstractSprite sprite) {
         if (sprite instanceof BulletSprite && ((BulletSprite) sprite).getOwner() == game.getPlayerSprite())
             lives--;
-        if (lives <= 0 || sprite instanceof PlayerSprite) game.removeSprite(this);
+        if (lives <= 0 || sprite instanceof PlayerSprite) {
+            game.removeSprite(this);
+            game.addPlayerScore(startLives * 5);
+        }
     }
 
 }
