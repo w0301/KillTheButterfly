@@ -56,7 +56,8 @@ public class BulletSprite extends MovableSprite {
 
     @Override
     public void performIntersection(AbstractSprite sprite) {
-        if (sprite.getClass() != owner.getClass() || sprite instanceof BulletSprite)
+        if ( (sprite.getClass() != owner.getClass() || sprite instanceof BulletSprite) &&
+            !(sprite instanceof HoleSprite) && !(getOwner() instanceof EnemySprite && sprite instanceof ElixirSprite) )
             game.removeSprite(this);
     }
 

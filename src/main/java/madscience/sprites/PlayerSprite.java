@@ -2,7 +2,6 @@ package madscience.sprites;
 
 import java.awt.Color;
 import java.awt.Graphics2D;
-import java.awt.Rectangle;
 import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
 import java.util.EnumSet;
@@ -67,6 +66,7 @@ public class PlayerSprite extends ShooterSprite {
     }
 
     public void setShield(boolean val) {
+        game.refreshPlayerView();
         shield = val;
     }
 
@@ -77,8 +77,7 @@ public class PlayerSprite extends ShooterSprite {
     }
 
     public void removeLife() {
-        if (shield) shield = false;
-        else lives -= 1;
+        lives -= 1;
     }
 
     @Override
@@ -100,8 +99,10 @@ public class PlayerSprite extends ShooterSprite {
     @Override
     public void performIntersection(AbstractSprite sprite) {
         if ( (sprite instanceof BulletSprite && ((BulletSprite) sprite).getOwner() != this) ||
-             (sprite instanceof EnemySprite) )
-            removeLife();
+             (sprite instanceof EnemySprite) ) {
+            if (hasShield()) setShield(false);
+            else removeLife();
+        }
     }
 
 }

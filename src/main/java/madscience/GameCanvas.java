@@ -105,8 +105,8 @@ public final class GameCanvas extends Canvas implements Runnable, ComponentListe
                             backgroundOffset = 0;
 
                         // updating sprites
-                        game.update(sec);
                         donePressedKeys();
+                        game.update(sec);
                     }
                 }
                 else if (gameEnded) {
@@ -196,25 +196,22 @@ public final class GameCanvas extends Canvas implements Runnable, ComponentListe
     }
 
     public synchronized void donePressedKeys() {
-        double speedX = 0;
-        double speedY = 0;
-
-        boolean isSpace = false;
+        boolean shoot = false, up = false, down = false;
         for (Integer key : pressedKeys) {
             switch (key) {
                 case KeyEvent.VK_UP:
-                    speedY = -game.getPlayerSetSpeed();
+                    up = true;
                     break;
                 case KeyEvent.VK_DOWN:
-                    speedY = game.getPlayerSetSpeed();
+                    down = true;
                     break;
                 case KeyEvent.VK_SPACE:
-                    isSpace = true;
+                    shoot = true;
                     break;
             }
         }
-        game.setPlayerSpriteSpeedXY(speedX, speedY);
-        game.setPlayerShooting(isSpace);
+        game.setPlayerMoving(up, down);
+        game.setPlayerShooting(shoot);
     }
 
     @Override

@@ -2,6 +2,7 @@ package madscience;
 
 import java.util.Random;
 import madscience.sprites.BossSprite;
+import madscience.sprites.ElixirSprite;
 import madscience.sprites.EnemySprite;
 import madscience.sprites.ShooterSprite;
 
@@ -17,8 +18,7 @@ public class GameFactory {
         Game newGame = new Game(width, height);
 
         /// enemies
-        newGame.setEnemiesToGen(10 + 10 * diff);
-        newGame.setEnemiesGenInterval(2000);
+        newGame.setEnemyGeneration(10 + 10 * diff, 2000, 1, 1);
 
         EnemySprite enemy1 = new EnemySprite(newGame, EnemySprite.DEFAULT_IMG_1, 1);
         enemy1.addGun(new ShooterSprite.Gun(0, enemy1.getHeight() / 2, -100, 0));
@@ -48,6 +48,38 @@ public class GameFactory {
         newBoss.setShootingInterval(5000);
         newBoss.setShooting(true);
         newGame.setBossSprite(newBoss);
+
+        /// adding elixirs
+        newGame.setElixirGeneration(5000);
+        newGame.addPossibleElixir(0.25, new ElixirSprite(newGame, ElixirSprite.LIFE_IMG) {
+            @Override
+            public void performElixir() {
+                game.getPlayerSprite().addLife();
+            }
+        });
+        newGame.addPossibleElixir(0.25, new ElixirSprite(newGame, ElixirSprite.SLOWDOWN_IMG) {
+            @Override
+            public void performElixir() {
+                game.setSpeedRatio(0.5, 5000);
+            }
+        });
+        newGame.addPossibleElixir(0.25, new ElixirSprite(newGame, ElixirSprite.FASTFORWARD_IMG) {
+            @Override
+            public void performElixir() {
+                game.setSpeedRatio(2, 5000);
+            }
+        });
+        newGame.addPossibleElixir(0.25, new ElixirSprite(newGame, ElixirSprite.SHIELD_IMG) {
+            @Override
+            public void performElixir() {
+                game.getPlayerSprite().setShield(true);
+            }
+
+            @Override
+            public void performElixirShooted() {
+                game.removeSprite(this);
+            }
+        });
 
         return newGame;
     }

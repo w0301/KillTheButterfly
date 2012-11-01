@@ -36,7 +36,7 @@ public class EnemySprite extends ShooterSprite {
     int lives;
     int startLives;
     double oscillationCenter = 0;
-    double oscillationTime = -1;
+    double oscillationTime = 0;
     double oscillationAmpl = 30;
     double oscillationPeriod = 3;
 
@@ -57,13 +57,21 @@ public class EnemySprite extends ShooterSprite {
         return lives;
     }
 
+    public double getOscillationAmplitude() {
+        return oscillationAmpl;
+    }
+
     public void setOscillationAmplitude(double ampl) {
         oscillationAmpl = ampl;
     }
 
+    public double getOscillationPeriod() {
+        return oscillationPeriod;
+    }
+
     public void setOscillationPeriod(double period) {
         oscillationPeriod = period;
-        oscillationTime = -1;
+        oscillationTime = 0;
     }
 
     public void setOscillation(double ampl, double period) {
@@ -75,44 +83,43 @@ public class EnemySprite extends ShooterSprite {
         return true;
     }
 
-    public double oscillationFunction() {
-        double parM1 = 1 / (oscillationPeriod / 2);
-        return (2 * Math.asin(Math.sin(parM1 * Math.PI * oscillationTime))) / Math.PI;
-        // return Math.sin(oscillationTime * 2 * Math.PI / oscillationPeriod);
+    public double oscillationFunction(double param) {
+        //if (param < oscillationPeriod / 2) return 2*param / oscillationPeriod;
+        //else return -(2 * param) / (oscillationPeriod + 2) + oscillationPeriod / (oscillationPeriod + 2);
+        double omega = (2 * Math.PI / oscillationPeriod);
+        return omega * (2 * Math.asin(Math.cos(omega * param))) / Math.PI;
+        //return omega * Math.cos(omega * param);
     }
 
     @Override
     public void update(double sec) {
-        double beforeX = x, beforeY = y;
-        super.update(sec);
-
         if (canOscillate()) {
-            if (oscillationTime == -1) {
-                oscillationTime = 0;
-                oscillationCenter = y;
-            }
-            y = oscillationCenter + oscillationAmpl * oscillationFunction();
+            speedY = oscillationAmpl * oscillationFunction(oscillationTime);
 
             oscillationTime += sec;
-            if (oscillationTime >= oscillationPeriod) oscillationTime = 0;
+            if (oscillationTime >= oscillationPeriod)
+                oscillationTime -= ((int) (oscillationTime / oscillationPeriod)) * oscillationPeriod;
         }
+
+        double beforeX = x, beforeY = y;
+        super.update(sec);
 
         EnumSet<Game.Border> borders = game.getBorders(this);
         if (borders.contains(Game.Border.TOP_BORDER) ||
             borders.contains(Game.Border.BOTTOM_BORDER)) {
             x = beforeX;
             y = beforeY;
-            if (oscillationTime <= oscillationPeriod / 4)
-                oscillationTime = oscillationPeriod / 4;
-            else if (oscillationTime <= 2*oscillationPeriod / 4)
-                oscillationTime = 2*oscillationPeriod / 4;
-            else if (oscillationTime <= 3*oscillationPeriod / 4)
-                oscillationTime = 3*oscillationPeriod / 4;
-            else if (oscillationTime <= oscillationPeriod)
-                oscillationTime = 0;
+            if (canOscillate()) {
+                if (oscillationTime <= oscillationPeriod / 4)
+                    oscillationTime = oscillationPeriod / 4;
+                else if (oscillationTime <= 2*oscillationPeriod / 4)
+                    oscillationTime = 2*oscillationPeriod / 4;
+                else if (oscillationTime <= 3*oscillationPeriod / 4)
+                    oscillationTime = 3*oscillationPeriod / 4;
+                else if (oscillationTime <= oscillationPeriod)
+                    oscillationTime = 0;
+            }
         }
-
-
         if (borders.contains(Game.Border.LEFT_BORDER_CROSSED)) {
             game.removeSprite(this);
         }

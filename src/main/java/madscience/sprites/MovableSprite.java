@@ -1,6 +1,5 @@
 package madscience.sprites;
 
-import java.awt.image.BufferedImage;
 import madscience.Game;
 
 /**

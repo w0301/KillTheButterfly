@@ -35,11 +35,11 @@ public class BossSprite extends EnemySprite {
 
     @Override
     public void update(double sec) {
-        super.update(sec);
         if (canOscillate()) {
             setSpeedXY(0, 0);
             game.setGameSpeed(0);
         }
+        super.update(sec);
     }
 
     @Override

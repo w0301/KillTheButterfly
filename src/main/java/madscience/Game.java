@@ -1,8 +1,6 @@
 package madscience;
 
-import java.awt.Color;
 import java.awt.Graphics2D;
-import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -19,8 +17,6 @@ import madscience.sprites.ShooterSprite;
 
 /*
  * TODO:
- *  - generating more enemies at once
- *  - some elixirs
  *  - Menu for game canvas
  */
 
@@ -56,6 +52,7 @@ public final class Game {
     }
 
     private int enemiesToGen = 5;
+    private int minEnemiesToGen = 1, maxEnemiesToGen = 1;
     private int lastEnemiesCount = 0;
     private double enemiesGenInterval = 2000;
     private double tillEnemyGen = enemiesGenInterval;
@@ -67,8 +64,12 @@ public final class Game {
 
     // pixels / second
     private double gameSpeed = 100;
+    private double origGameSpeed = gameSpeed;
     private double playerSetSpeed = 175;
     private double playerBulletSpeed = 150;
+
+    private double speedRatio = 1;
+    private double tillUnsetSpeedRatio = -1;
 
     // player options
     private double playerAnimInterval = 100;
@@ -148,7 +149,18 @@ public final class Game {
     }
 
     public void setGameSpeed(double gameSpeed) {
-        this.gameSpeed = gameSpeed;
+        this.gameSpeed = this.origGameSpeed = gameSpeed;
+        refreshPlayerView();
+    }
+
+    public double getSpeedRatio() {
+        return speedRatio;
+    }
+
+    public void setSpeedRatio(double speedRatio, double time) {
+        this.speedRatio = speedRatio;
+        tillUnsetSpeedRatio = time;
+        gameSpeed = origGameSpeed * speedRatio;
         refreshPlayerView();
     }
 
@@ -174,28 +186,21 @@ public final class Game {
         this.playerSetSpeed = playerSetSpeed;
     }
 
-    public double getPlayerSpriteSpeedX() {
-        return playerSprite.getSpeedX();
-    }
-
-    public double getPlayerSpriteSpeedY() {
-        return playerSprite.getSpeedY();
-    }
-
-    public void setPlayerSpriteSpeedXY(double x, double y) {
-        playerSprite.setSpeedXY(x, y);
+    public void setPlayerMoving(boolean top, boolean down) {
+        if (top == down) playerSprite.setSpeedXY(0, 0);
+        else playerSprite.setSpeedXY(0, top ? -playerSetSpeed : playerSetSpeed);
     }
 
     public void setPlayerShooting(boolean val) {
         playerSprite.setShooting(val);
     }
 
-    public BossSprite getBossSprite() {
-        return bossSprite;
-    }
-
     public int getBossMaxLives() {
         return bossMaxLives;
+    }
+
+    public BossSprite getBossSprite() {
+        return bossSprite;
     }
 
     public void setBossSprite(BossSprite sprite) {
@@ -247,18 +252,11 @@ public final class Game {
         addPossibleSprite(possibleEnemies, new SpritePossibility(prob, enemy));
     }
 
-    public void setEnemyGeneration(int count, double interval) {
+    public void setEnemyGeneration(int count, double interval, int min, int max) {
         enemiesToGen = count;
         enemiesGenInterval = tillEnemyGen = interval;
-    }
-
-    public void setEnemiesToGen(int val) {
-        enemiesToGen = val;
-    }
-
-    public void setEnemiesGenInterval(double val) {
-        enemiesGenInterval = val;
-        tillEnemyGen = val;
+        minEnemiesToGen = min;
+        maxEnemiesToGen = max;
     }
 
     public void addPossibleElixir(double prob, ElixirSprite elixir) {
@@ -272,8 +270,13 @@ public final class Game {
     public void update(double sec) {
         // updating current sprites
         lastEnemiesCount = 0;
+        if (tillUnsetSpeedRatio > 0) tillUnsetSpeedRatio -= sec * 1000;
+        else if (speedRatio != 1) {
+            speedRatio = 1;
+            setGameSpeed(origGameSpeed);
+        }
         for (AbstractSprite sprite : sprites) {
-            sprite.update(sec);
+            sprite.update(sec * speedRatio);
             if (sprite instanceof EnemySprite) lastEnemiesCount++;
         }
 
@@ -290,23 +293,27 @@ public final class Game {
         // adding auto generated enemies
         tillEnemyGen -= sec * 1000;
         if (enemiesToGen > 0 && tillEnemyGen <= 0) {
-            AbstractSprite sprite = pickPossibleSprite(possibleEnemies);
+            int toGen = rand.nextInt(maxEnemiesToGen - minEnemiesToGen + 1) + minEnemiesToGen;
+            toGen = Math.min(toGen, enemiesToGen);
+            for (int i = 0; i < toGen; i++) {
+                AbstractSprite sprite = pickPossibleSprite(possibleEnemies);
 
-            if (sprite != null && sprite instanceof EnemySprite) {
-                EnemySprite enemy = (EnemySprite) sprite;
-                enemy.setXY(canvasWidth - enemy.getWidth() - 1,
-                            rand.nextInt(canvasHeight - (int) enemy.getHeight() - 1) + 1);
-                enemy.setSpeedXY(-gameSpeed, 0);
+                if (sprite != null && sprite instanceof EnemySprite) {
+                    EnemySprite enemy = (EnemySprite) sprite;
+                    enemy.setXY(canvasWidth - enemy.getWidth() - 1,
+                                rand.nextInt(canvasHeight - (int) enemy.getHeight() - 1) + 1);
+                    enemy.setSpeedXY(-origGameSpeed, 0);
 
-                addSprite(enemy);
-                enemiesToGen--;
-                tillEnemyGen = enemiesGenInterval;
+                    addSprite(enemy);
+                }
             }
+            enemiesToGen -= toGen;
+            tillEnemyGen = enemiesGenInterval;
         }
         else if (enemiesToGen == 0 && tillEnemyGen <= 0 && bossSprite != null && !bossAdded && lastEnemiesCount == 0) {
             bossSprite.setXY(canvasWidth, canvasHeight / 2 - bossSprite.getHeight() / 2);
-            bossSprite.setOscillation(canvasHeight / 2 - bossSprite.getHeight() / 2, 20);
-            bossSprite.setSpeedXY(-gameSpeed, 0);
+            bossSprite.setOscillation(bossSprite.getHeight(), 5);
+            bossSprite.setSpeedXY(-origGameSpeed, 0);
 
             addSprite(bossSprite);
             bossAdded = true;
@@ -314,14 +321,14 @@ public final class Game {
 
         // generation elixirs
         tillElixirGen -= sec * 1000;
-        if (tillElixirGen <= 0) {
+        if (tillElixirGen <= 0 && !bossAdded) {
             AbstractSprite sprite = pickPossibleSprite(possibleElixirs);
 
             if (sprite != null && sprite instanceof ElixirSprite) {
                 ElixirSprite elixir = (ElixirSprite) sprite;
                 elixir.setXY(canvasWidth - elixir.getWidth() - 1,
                              rand.nextInt(canvasHeight - (int) elixir.getHeight() - 1) + 1);
-                elixir.setSpeedXY(-gameSpeed, 0);
+                elixir.setSpeedXY(-origGameSpeed, 0);
 
                 addSprite(elixir);
                 tillElixirGen = elixirsGenInterval;
@@ -330,7 +337,8 @@ public final class Game {
 
         // adding/removing sprites added/removed
         for (AbstractSprite sprite : spritesToAdd) {
-            sprites.add(sprite);
+            if (sprite instanceof ElixirSprite) sprites.add(0, sprite);
+            else sprites.add(sprite);
             sprite.performAdded();
         }
         spritesToAdd.clear();
