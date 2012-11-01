@@ -26,21 +26,8 @@ import madscience.sprites.PlayerSprite;
 public final class GameCanvas extends Canvas implements Runnable, ComponentListener, KeyListener {
     private static final double LIFE_INDICATOR_WIDTH = 275;
     private static final double LIFE_INDICATOR_MARGIN = 6;
-    private static final BufferedImage BACKGROUND_BLOCK_IMG;
-
-    static {
-        BACKGROUND_BLOCK_IMG = new BufferedImage(50, 50, BufferedImage.TYPE_INT_ARGB);
-        Graphics2D g = BACKGROUND_BLOCK_IMG.createGraphics();
-        g.setColor(Color.BLACK);
-        g.fillRect(0, 0, BACKGROUND_BLOCK_IMG.getWidth(), BACKGROUND_BLOCK_IMG.getHeight());
-        g.setColor(Color.GRAY);
-        g.drawRect(3, 3, BACKGROUND_BLOCK_IMG.getWidth() - 3, BACKGROUND_BLOCK_IMG.getHeight() - 3);
-    }
 
     private BufferStrategy buffer;
-
-    private BufferedImage backgroundImg;
-    private double backgroundOffset = 0;
 
     private Thread loopThread;
     private final Object loopLock = new Object();
@@ -72,7 +59,6 @@ public final class GameCanvas extends Canvas implements Runnable, ComponentListe
             game = newGame;
             gamePaused = false;
             gameEnded = false;
-            backgroundOffset = 0;
         }
     }
 
@@ -99,11 +85,6 @@ public final class GameCanvas extends Canvas implements Runnable, ComponentListe
                         gameEnded = true;
                     }
                     else {
-                        // updating backgorund
-                        backgroundOffset -= game.getGameSpeed() * sec;
-                        if (Math.abs(backgroundOffset) >= BACKGROUND_BLOCK_IMG.getWidth())
-                            backgroundOffset = 0;
-
                         // updating sprites
                         donePressedKeys();
                         game.update(sec);
@@ -151,11 +132,6 @@ public final class GameCanvas extends Canvas implements Runnable, ComponentListe
 
         // game backgorund and sprites
         g.translate(0, getHeight() - getGameHeight());
-
-        AffineTransform bgAf = new AffineTransform();
-        bgAf.translate(backgroundOffset, 0);
-        g.drawImage(backgroundImg, bgAf, null);
-
         if (game != null) {
             synchronized (loopLock) {
                 game.draw(g);
@@ -240,18 +216,6 @@ public final class GameCanvas extends Canvas implements Runnable, ComponentListe
     public void componentShown(ComponentEvent ce) {
         createBufferStrategy(2);
         buffer = getBufferStrategy();
-
-        int bgXCount = (int) (((double) getGameWidth()) / ((double) BACKGROUND_BLOCK_IMG.getWidth()) + 1.5);
-        int bgYCount = (int) (((double) getGameHeight()) / ((double) BACKGROUND_BLOCK_IMG.getHeight()) + 0.5);
-        backgroundImg = new BufferedImage(BACKGROUND_BLOCK_IMG.getWidth() * bgXCount,
-                                          BACKGROUND_BLOCK_IMG.getHeight() * bgYCount, BufferedImage.TYPE_INT_ARGB);
-        Graphics2D g = backgroundImg.createGraphics();
-        for (int y = 0; y < bgYCount; y++) {
-            for (int x = 0; x < bgXCount; x++) {
-                g.drawImage(BACKGROUND_BLOCK_IMG, null, x * BACKGROUND_BLOCK_IMG.getWidth(),
-                                                        y * BACKGROUND_BLOCK_IMG.getHeight());
-            }
-        }
 
         if (loopThread == null || loopThread.getState() == Thread.State.TERMINATED) {
             loopThread = new Thread(this);

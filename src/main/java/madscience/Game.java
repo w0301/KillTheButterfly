@@ -1,12 +1,17 @@
 package madscience;
 
+import java.awt.Color;
 import java.awt.Graphics2D;
+import java.awt.geom.AffineTransform;
+import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.EnumSet;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Random;
 import madscience.sprites.AbstractSprite;
 import madscience.sprites.BossSprite;
@@ -25,6 +30,16 @@ import madscience.sprites.ShooterSprite;
  * @author Richard Kakaš
  */
 public final class Game {
+    private static final BufferedImage BACKGROUND_BLOCK_IMG;
+
+    static {
+        BACKGROUND_BLOCK_IMG = new BufferedImage(50, 50, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g = BACKGROUND_BLOCK_IMG.createGraphics();
+        g.setColor(Color.BLACK);
+        g.fillRect(0, 0, BACKGROUND_BLOCK_IMG.getWidth(), BACKGROUND_BLOCK_IMG.getHeight());
+        g.setColor(Color.GRAY);
+        g.drawRect(3, 3, BACKGROUND_BLOCK_IMG.getWidth() - 3, BACKGROUND_BLOCK_IMG.getHeight() - 3);
+    }
 
     // borders constants
     public enum Border {
@@ -36,6 +51,9 @@ public final class Game {
 
     private static Random rand = new Random();
     private int canvasWidth = 0, canvasHeight = 0;
+
+    private BufferedImage backgroundImg;
+    private double backgroundOffset = 0;
 
     // game info
     private int playerScore = 0;
@@ -113,6 +131,20 @@ public final class Game {
         canvasWidth = width;
         canvasHeight = height;
 
+        // background
+        int bgXCount = (int) (((double) canvasWidth) / ((double) BACKGROUND_BLOCK_IMG.getWidth()) + 1.5);
+        int bgYCount = (int) (((double) canvasHeight) / ((double) BACKGROUND_BLOCK_IMG.getHeight()) + 0.5);
+        backgroundImg = new BufferedImage(BACKGROUND_BLOCK_IMG.getWidth() * bgXCount,
+                                          BACKGROUND_BLOCK_IMG.getHeight() * bgYCount, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g = backgroundImg.createGraphics();
+        for (int y = 0; y < bgYCount; y++) {
+            for (int x = 0; x < bgXCount; x++) {
+                g.drawImage(BACKGROUND_BLOCK_IMG, null, x * BACKGROUND_BLOCK_IMG.getWidth(),
+                                                        y * BACKGROUND_BLOCK_IMG.getHeight());
+            }
+        }
+
+        // sprites logics
         playerSprite = new PlayerSprite(this);
         playerSprite.setXY(playerSprite.getWidth() * 1.25,
                            canvasHeight / 2 - playerSprite.getHeight() / 2);
@@ -268,6 +300,11 @@ public final class Game {
     }
 
     public void update(double sec) {
+        // updating background
+        backgroundOffset -= getGameSpeed() * sec * speedRatio;
+        if (Math.abs(backgroundOffset) >= BACKGROUND_BLOCK_IMG.getWidth())
+        backgroundOffset = 0;
+
         // updating current sprites
         lastEnemiesCount = 0;
         if (tillUnsetSpeedRatio > 0) tillUnsetSpeedRatio -= sec * 1000;
@@ -280,12 +317,15 @@ public final class Game {
             if (sprite instanceof EnemySprite) lastEnemiesCount++;
         }
 
-        for (int i = 0; i < sprites.size(); i++) {
-            for (int j = i + 1; j < sprites.size(); j++) {
-                if (sprites.get(i).intersects(sprites.get(j)) ||
-                    sprites.get(j).intersects(sprites.get(i))) {
-                    sprites.get(i).performIntersection(sprites.get(j));
-                    sprites.get(j).performIntersection(sprites.get(i));
+        ListIterator<AbstractSprite> iter1 = sprites.listIterator();
+        while (iter1.hasNext()) {
+            AbstractSprite sprite1 = iter1.next();
+            ListIterator<AbstractSprite> iter2 = sprites.listIterator(iter1.nextIndex());
+            while (iter2.hasNext()) {
+                AbstractSprite sprite2 = iter2.next();
+                if (sprite1.intersects(sprite2) || sprite2.intersects(sprite1)) {
+                    sprite1.performIntersection(sprite2);
+                    sprite2.performIntersection(sprite1);
                 }
             }
         }
@@ -351,6 +391,12 @@ public final class Game {
     }
 
     public void draw(Graphics2D g) {
+        // drawing background
+        AffineTransform bgAf = new AffineTransform();
+        bgAf.translate(backgroundOffset, 0);
+        g.drawImage(backgroundImg, bgAf, null);
+
+        // drawing sprite
         for (AbstractSprite sprite : sprites) sprite.draw(g);
     }
 
