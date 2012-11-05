@@ -3,7 +3,7 @@ package madscience.sprites;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import javax.imageio.ImageIO;
-import madscience.Game;
+import madscience.views.GameView;
 
 /**
  *
@@ -24,15 +24,15 @@ public class HoleSprite extends ElixirSprite {
     }
 
 
-    public HoleSprite(Game game, SpriteView view) {
+    public HoleSprite(GameView game, SpriteView view) {
         super(game, view);
     }
 
-    public HoleSprite(Game game, BufferedImage image) {
+    public HoleSprite(GameView game, BufferedImage image) {
         this(game, new SpriteView(image));
     }
 
-    public HoleSprite(Game game) {
+    public HoleSprite(GameView game) {
         this(game, HOLE_IMG);
     }
 

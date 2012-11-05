@@ -1,5 +1,6 @@
 package madscience;
 
+import madscience.views.GameView;
 import java.util.Random;
 import madscience.sprites.BossSprite;
 import madscience.sprites.ElixirSprite;
@@ -14,8 +15,8 @@ public class GameFactory {
 
     private static final Random rand = new Random();
 
-    public static Game createGame(int width, int height, int diff) {
-        Game newGame = new Game(width, height);
+    public static GameView createGame(int width, int height, int diff) {
+        GameView newGame = new GameView(width, height);
 
         /// enemies
         newGame.setEnemyGeneration(10 + 10 * diff, 2000, 1, 1);

@@ -11,19 +11,22 @@ import java.awt.event.ComponentEvent;
 import java.awt.event.ComponentListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
-import java.awt.geom.AffineTransform;
 import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferStrategy;
-import java.awt.image.BufferedImage;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import madscience.sprites.PlayerSprite;
+import madscience.views.CanvasView;
+import madscience.views.GameView;
+import madscience.views.GameViewListener;
 
 /**
  *
  * @author Richard Kakaš
  */
-public final class GameCanvas extends Canvas implements Runnable, ComponentListener, KeyListener {
+public final class GameCanvas extends Canvas implements Runnable, ComponentListener, KeyListener, GameViewListener {
     private static final double LIFE_INDICATOR_WIDTH = 275;
     private static final double LIFE_INDICATOR_MARGIN = 6;
 
@@ -32,11 +35,11 @@ public final class GameCanvas extends Canvas implements Runnable, ComponentListe
     private Thread loopThread;
     private final Object loopLock = new Object();
     private boolean loopRunning = false;
-    private boolean gamePaused = false;
-    private boolean gameEnded = false;
 
     private Set<Integer> pressedKeys = new HashSet<Integer>();
-    private Game game = null;
+    private Map<String, CanvasView> views = new HashMap<String, CanvasView>();
+
+    private GameView game = null;
     private int nextGameLevel = 1;
 
     public GameCanvas() {
@@ -44,6 +47,15 @@ public final class GameCanvas extends Canvas implements Runnable, ComponentListe
         setIgnoreRepaint(true);
         addComponentListener(this);
         addKeyListener(this);
+    }
+
+    public CanvasView putView(String name, CanvasView view) {
+        views.put(name, view);
+        return view;
+    }
+
+    public CanvasView getView(String name) {
+        return views.get(name);
     }
 
     public int getGameWidth() {
@@ -54,45 +66,35 @@ public final class GameCanvas extends Canvas implements Runnable, ComponentListe
         return getHeight() - 25;
     }
 
-    public void startGame(Game newGame) {
+    public void startGame(GameView newGame) {
         synchronized (loopLock) {
-            game = newGame;
-            gamePaused = false;
-            gameEnded = false;
+            game = (GameView) putView("game", newGame);
+            game.setVisible(true);
+            game.setPaused(false);
+            game.addGameListener(this);
         }
     }
 
-    public void startNextGame() {
+    public void startNextGame(boolean reset) {
         int score = 0;
-        if (game == null || game.isLost()) nextGameLevel = 1;
+        if (game == null || reset) nextGameLevel = 1;
         else score = game.getPlayerScore();
-        Game newGame = GameFactory.createGame(getGameWidth(), getGameHeight(), nextGameLevel++);
+        GameView newGame = GameFactory.createGame(getGameWidth(), getGameHeight(), nextGameLevel++);
         newGame.addPlayerScore(score);
         startGame(newGame);
     }
 
     public void pauseGame(boolean val) {
         synchronized (loopLock) {
-            gamePaused = val;
+            game.setPaused(val);
         }
     }
 
     protected void update(double sec) {
-        if (game != null) {
-            synchronized (loopLock) {
-                if (!gamePaused && !gameEnded) {
-                    if (game.isWon() || game.isLost()) {
-                        gameEnded = true;
-                    }
-                    else {
-                        // updating sprites
-                        donePressedKeys();
-                        game.update(sec);
-                    }
-                }
-                else if (gameEnded) {
-                    startNextGame();
-                }
+        synchronized (loopLock) {
+            for (CanvasView view : views.values()) {
+                view.processKeys(pressedKeys);
+                view.update(sec);
             }
         }
     }
@@ -130,11 +132,12 @@ public final class GameCanvas extends Canvas implements Runnable, ComponentListe
         g.drawString(scoreStr, getWidth() / 2.0f - fontMetrics.stringWidth(scoreStr) / 2,
                                9.0f*(getHeight() - getGameHeight()) / 10.0f);
 
-        // game backgorund and sprites
-        g.translate(0, getHeight() - getGameHeight());
-        if (game != null) {
-            synchronized (loopLock) {
-                game.draw(g);
+        // drawing canvas views
+        synchronized (loopLock) {
+            for (CanvasView view : views.values()) {
+                g.translate(getWidth() / 2 - view.getWidth() / 2,
+                            getHeight() / 2 - view.getHeight() / 2 + 12.5);
+                view.draw(g);
             }
         }
     }
@@ -171,25 +174,6 @@ public final class GameCanvas extends Canvas implements Runnable, ComponentListe
         }
     }
 
-    public synchronized void donePressedKeys() {
-        boolean shoot = false, up = false, down = false;
-        for (Integer key : pressedKeys) {
-            switch (key) {
-                case KeyEvent.VK_UP:
-                    up = true;
-                    break;
-                case KeyEvent.VK_DOWN:
-                    down = true;
-                    break;
-                case KeyEvent.VK_SPACE:
-                    shoot = true;
-                    break;
-            }
-        }
-        game.setPlayerMoving(up, down);
-        game.setPlayerShooting(shoot);
-    }
-
     @Override
     public void keyTyped(KeyEvent ke) {
     }
@@ -223,7 +207,7 @@ public final class GameCanvas extends Canvas implements Runnable, ComponentListe
             loopThread.start();
         }
 
-        startNextGame();
+        startNextGame(true);
     }
 
     @Override
@@ -239,6 +223,19 @@ public final class GameCanvas extends Canvas implements Runnable, ComponentListe
             }
             catch (InterruptedException ex) { }
         }
+    }
+
+    @Override
+    public void gameEnded(GameView game, boolean won) {
+        startNextGame(!won);
+    }
+
+    @Override
+    public void gamePaused(GameView game) {
+    }
+
+    @Override
+    public void gameUnpaused(GameView game) {
     }
 
 }

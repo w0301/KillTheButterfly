@@ -5,7 +5,7 @@ import java.awt.Graphics2D;
 import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
 import java.util.EnumSet;
-import madscience.Game;
+import madscience.views.GameView;
 
 /**
  *
@@ -37,19 +37,19 @@ public class EnemySprite extends ShooterSprite {
     int startLives;
     double oscillationCenter = 0;
     double oscillationTime = 0;
-    double oscillationAmpl = 30;
-    double oscillationPeriod = 3;
+    double oscillationAmpl = 50;
+    double oscillationPeriod = 2;
 
-    public EnemySprite(Game game, SpriteView view, int lives) {
+    public EnemySprite(GameView game, SpriteView view, int lives) {
         super(game, view);
         this.lives = this.startLives = lives;
     }
 
-    public EnemySprite(Game game, BufferedImage image, int lives) {
+    public EnemySprite(GameView game, BufferedImage image, int lives) {
         this(game, new SpriteView(image), lives);
     }
 
-    public EnemySprite(Game game, int lives) {
+    public EnemySprite(GameView game, int lives) {
         this(game, DEFAULT_IMG_1, lives);
     }
 
@@ -86,15 +86,16 @@ public class EnemySprite extends ShooterSprite {
     public double oscillationFunction(double param) {
         //if (param < oscillationPeriod / 2) return 2*param / oscillationPeriod;
         //else return -(2 * param) / (oscillationPeriod + 2) + oscillationPeriod / (oscillationPeriod + 2);
-        double omega = (2 * Math.PI / oscillationPeriod);
-        return omega * (2 * Math.asin(Math.cos(omega * param))) / Math.PI;
+        //double omega = (2 * Math.PI / oscillationPeriod);
+        //return omega * (2 * Math.asin(Math.cos(omega * param))) / Math.PI;
         //return omega * Math.cos(omega * param);
+        return Math.signum(Math.sin((2*Math.PI * param) / oscillationPeriod));
     }
 
     @Override
     public void update(double sec) {
         if (canOscillate()) {
-            speedY = oscillationAmpl * oscillationFunction(oscillationTime);
+            speedY = (oscillationAmpl / (oscillationPeriod / 2)) * oscillationFunction(oscillationTime);
 
             oscillationTime += sec;
             if (oscillationTime >= oscillationPeriod)
@@ -104,9 +105,9 @@ public class EnemySprite extends ShooterSprite {
         double beforeX = x, beforeY = y;
         super.update(sec);
 
-        EnumSet<Game.Border> borders = game.getBorders(this);
-        if (borders.contains(Game.Border.TOP_BORDER) ||
-            borders.contains(Game.Border.BOTTOM_BORDER)) {
+        EnumSet<GameView.Border> borders = game.getBorders(this);
+        if (borders.contains(GameView.Border.TOP_BORDER) ||
+            borders.contains(GameView.Border.BOTTOM_BORDER)) {
             x = beforeX;
             y = beforeY;
             if (canOscillate()) {
@@ -120,7 +121,7 @@ public class EnemySprite extends ShooterSprite {
                     oscillationTime = 0;
             }
         }
-        if (borders.contains(Game.Border.LEFT_BORDER_CROSSED)) {
+        if (borders.contains(GameView.Border.LEFT_BORDER_CROSSED)) {
             game.removeSprite(this);
         }
     }

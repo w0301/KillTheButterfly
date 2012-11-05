@@ -1,18 +1,20 @@
-package madscience;
+package madscience.views;
 
 import java.awt.Color;
 import java.awt.Graphics2D;
+import java.awt.event.KeyEvent;
 import java.awt.geom.AffineTransform;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.EnumSet;
-import java.util.Iterator;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Random;
+import java.util.Set;
 import madscience.sprites.AbstractSprite;
 import madscience.sprites.BossSprite;
 import madscience.sprites.ElixirSprite;
@@ -29,7 +31,7 @@ import madscience.sprites.ShooterSprite;
  *
  * @author Richard Kakaš
  */
-public final class Game {
+public final class GameView extends CanvasView {
     private static final BufferedImage BACKGROUND_BLOCK_IMG;
 
     static {
@@ -49,14 +51,15 @@ public final class Game {
         RIGHT_BORDER, RIGHT_BORDER_CROSSED
     }
 
+    private Set<GameViewListener> gameListeners = new HashSet<GameViewListener>();
     private static Random rand = new Random();
-    private int canvasWidth = 0, canvasHeight = 0;
 
     private BufferedImage backgroundImg;
     private double backgroundOffset = 0;
 
     // game info
     private int playerScore = 0;
+    private boolean paused = false;
 
     // enemy and other sprites generations
     private static class SpritePossibility {
@@ -127,13 +130,12 @@ public final class Game {
         return null;
     }
 
-    public Game(int width, int height) {
-        canvasWidth = width;
-        canvasHeight = height;
+    public GameView(int width, int height) {
+        super(width, height);
 
         // background
-        int bgXCount = (int) (((double) canvasWidth) / ((double) BACKGROUND_BLOCK_IMG.getWidth()) + 1.5);
-        int bgYCount = (int) (((double) canvasHeight) / ((double) BACKGROUND_BLOCK_IMG.getHeight()) + 0.5);
+        int bgXCount = (int) (((double) getWidth()) / ((double) BACKGROUND_BLOCK_IMG.getWidth()) + 1.5);
+        int bgYCount = (int) (((double) getHeight()) / ((double) BACKGROUND_BLOCK_IMG.getHeight()) + 0.5);
         backgroundImg = new BufferedImage(BACKGROUND_BLOCK_IMG.getWidth() * bgXCount,
                                           BACKGROUND_BLOCK_IMG.getHeight() * bgYCount, BufferedImage.TYPE_INT_ARGB);
         Graphics2D g = backgroundImg.createGraphics();
@@ -147,7 +149,7 @@ public final class Game {
         // sprites logics
         playerSprite = new PlayerSprite(this);
         playerSprite.setXY(playerSprite.getWidth() * 1.25,
-                           canvasHeight / 2 - playerSprite.getHeight() / 2);
+                           getHeight() / 2 - playerSprite.getHeight() / 2);
         playerSprite.addGun(new ShooterSprite.Gun(playerSprite.getWidth(), playerSprite.getHeight() / 2,
                                                   playerBulletSpeed, 0));
         playerSprite.setShootingInterval(playerShootingInterval);
@@ -160,12 +162,26 @@ public final class Game {
         spritesToRemove = new ArrayList<AbstractSprite>();
     }
 
-    public int getCanvasWidth() {
-        return canvasWidth;
+    public void addGameListener(GameViewListener l) {
+        gameListeners.add(l);
     }
 
-    public int getCanvasHeight() {
-        return canvasHeight;
+    public void removeGameListener(GameViewListener l) {
+        gameListeners.remove(l);
+    }
+
+    public boolean isPaused() {
+        return paused;
+    }
+
+    public void setPaused(boolean paused) {
+        this.paused = paused;
+        if (paused) {
+            for (GameViewListener l : gameListeners) l.gamePaused(this);
+        }
+        else {
+            for (GameViewListener l : gameListeners) l.gameUnpaused(this);
+        }
     }
 
     public int getPlayerScore() {
@@ -200,10 +216,6 @@ public final class Game {
         return playerSprite;
     }
 
-    public double getPlayerSetSpeed() {
-        return playerSetSpeed;
-    }
-
     public void refreshPlayerView() {
         playerSprite.setDefaultView(PlayerSprite.DEFAULT_VIEW);
         if (gameSpeed != 0) {
@@ -212,6 +224,10 @@ public final class Game {
             playerSprite.runAnimation(playerAnimInterval);
         }
         else playerSprite.clearAnimation();
+    }
+
+    public double getPlayerSetSpeed() {
+        return playerSetSpeed;
     }
 
     public void setPlayerSetSpeed(double playerSetSpeed) {
@@ -245,20 +261,20 @@ public final class Game {
 
         if (sprite.getX() <= 0)
             ret.add(Border.LEFT_BORDER);
-        else if (sprite.getX() + sprite.getWidth() >= getCanvasWidth())
+        else if (sprite.getX() + sprite.getWidth() >= getWidth())
             ret.add(Border.RIGHT_BORDER);
         if (sprite.getY() <= 0)
             ret.add(Border.TOP_BORDER);
-        else if (sprite.getY() + sprite.getHeight() >= getCanvasHeight())
+        else if (sprite.getY() + sprite.getHeight() >= getHeight())
             ret.add(Border.BOTTOM_BORDER);
 
         if (sprite.getX() + sprite.getWidth() <= 0)
             ret.add(Border.LEFT_BORDER_CROSSED);
-        else if (sprite.getX() >= getCanvasWidth())
+        else if (sprite.getX() >= getWidth())
             ret.add(Border.RIGHT_BORDER_CROSSED);
         if (sprite.getY() + sprite.getHeight() <= 0)
             ret.add(Border.TOP_BORDER_CROSSED);
-        else if (sprite.getY() >= getCanvasHeight())
+        else if (sprite.getY() >= getHeight())
             ret.add(Border.BOTTOM_BORDER_CROSSED);
 
         return ret;
@@ -270,6 +286,10 @@ public final class Game {
 
     public boolean isWon() {
         return enemiesToGen == 0 && bossSprite == null && lastEnemiesCount == 0;
+    }
+
+    public boolean isEnded() {
+        return isLost() || isWon();
     }
 
     public void addSprite(AbstractSprite sprite) {
@@ -299,7 +319,10 @@ public final class Game {
         elixirsGenInterval = tillElixirGen = interval;
     }
 
+    @Override
     public void update(double sec) {
+        if (isPaused() || isEnded() || !isVisible()) return;
+
         // updating background
         backgroundOffset -= getGameSpeed() * sec * speedRatio;
         if (Math.abs(backgroundOffset) >= BACKGROUND_BLOCK_IMG.getWidth())
@@ -340,8 +363,8 @@ public final class Game {
 
                 if (sprite != null && sprite instanceof EnemySprite) {
                     EnemySprite enemy = (EnemySprite) sprite;
-                    enemy.setXY(canvasWidth - enemy.getWidth() - 1,
-                                rand.nextInt(canvasHeight - (int) enemy.getHeight() - 1) + 1);
+                    enemy.setXY(getWidth() - enemy.getWidth() - 1,
+                                rand.nextInt(getHeight() - (int) enemy.getHeight() - 1) + 1);
                     enemy.setSpeedXY(-origGameSpeed, 0);
 
                     addSprite(enemy);
@@ -351,8 +374,8 @@ public final class Game {
             tillEnemyGen = enemiesGenInterval;
         }
         else if (enemiesToGen == 0 && tillEnemyGen <= 0 && bossSprite != null && !bossAdded && lastEnemiesCount == 0) {
-            bossSprite.setXY(canvasWidth, canvasHeight / 2 - bossSprite.getHeight() / 2);
-            bossSprite.setOscillation(bossSprite.getHeight(), 5);
+            bossSprite.setXY(getWidth(), getHeight() / 2 - bossSprite.getHeight());
+            bossSprite.setOscillation(bossSprite.getHeight() * 1.5, 5);
             bossSprite.setSpeedXY(-origGameSpeed, 0);
 
             addSprite(bossSprite);
@@ -366,8 +389,8 @@ public final class Game {
 
             if (sprite != null && sprite instanceof ElixirSprite) {
                 ElixirSprite elixir = (ElixirSprite) sprite;
-                elixir.setXY(canvasWidth - elixir.getWidth() - 1,
-                             rand.nextInt(canvasHeight - (int) elixir.getHeight() - 1) + 1);
+                elixir.setXY(getWidth() - elixir.getWidth() - 1,
+                             rand.nextInt(getHeight() - (int) elixir.getHeight() - 1) + 1);
                 elixir.setSpeedXY(-origGameSpeed, 0);
 
                 addSprite(elixir);
@@ -388,9 +411,17 @@ public final class Game {
             sprite.performRemoved();
         }
         spritesToRemove.clear();
+
+        if (isEnded()) {
+            for (GameViewListener l : gameListeners)
+                l.gameEnded(this, isWon());
+        }
     }
 
+    @Override
     public void draw(Graphics2D g) {
+        if (!isVisible()) return;
+
         // drawing background
         AffineTransform bgAf = new AffineTransform();
         bgAf.translate(backgroundOffset, 0);
@@ -398,6 +429,28 @@ public final class Game {
 
         // drawing sprite
         for (AbstractSprite sprite : sprites) sprite.draw(g);
+    }
+
+    @Override
+    public void processKeys(Set<Integer> keys) {
+        if (isPaused() || isEnded() || !isVisible()) return;
+
+        boolean shoot = false, up = false, down = false;
+        for (Integer key : keys) {
+            switch (key) {
+                case KeyEvent.VK_UP:
+                    up = true;
+                    break;
+                case KeyEvent.VK_DOWN:
+                    down = true;
+                    break;
+                case KeyEvent.VK_SPACE:
+                    shoot = true;
+                    break;
+            }
+        }
+        setPlayerMoving(up, down);
+        setPlayerShooting(shoot);
     }
 
 }

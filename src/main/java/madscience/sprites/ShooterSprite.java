@@ -3,7 +3,7 @@ package madscience.sprites;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.List;
-import madscience.Game;
+import madscience.views.GameView;
 
 /**
  *
@@ -14,12 +14,18 @@ public abstract class ShooterSprite extends MovableSprite {
     public static class Gun {
         private double x, y;
         private double bulletSpeedX, bulletSpeedY;
+        private BufferedImage bulletImg;
 
         public Gun(double x, double y, double bulletSpeedX, double bulletSpeedY) {
             this.x = x;
             this.y = y;
             this.bulletSpeedX = bulletSpeedX;
             this.bulletSpeedY = bulletSpeedY;
+        }
+
+        public Gun(double x, double y, double bulletSpeedX, double bulletSpeedY, BufferedImage img) {
+            this(x, y, bulletSpeedX, bulletSpeedY);
+            bulletImg = img;
         }
 
         public double getX() {
@@ -30,8 +36,10 @@ public abstract class ShooterSprite extends MovableSprite {
             return y;
         }
 
-        public BulletSprite getBullet(Game game, AbstractSprite owner) {
-            BulletSprite bullet = new BulletSprite(game, owner);
+        public BulletSprite getBullet(GameView game, AbstractSprite owner) {
+            BulletSprite bullet;
+            if (bulletImg != null) bullet = new BulletSprite(game, owner, bulletImg);
+            else bullet = new BulletSprite(game, owner);
             bullet.setXY(x, y);
             bullet.setSpeedXY(bulletSpeedX, bulletSpeedY);
             return bullet;
@@ -46,7 +54,7 @@ public abstract class ShooterSprite extends MovableSprite {
     long shootingInterval = 0;
     double shootInTime = 0;
 
-    public ShooterSprite(Game game, SpriteView view) {
+    public ShooterSprite(GameView game, SpriteView view) {
         super(game, view);
         this.guns = new ArrayList<Gun>();
     }

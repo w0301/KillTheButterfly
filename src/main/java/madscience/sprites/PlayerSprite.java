@@ -5,7 +5,7 @@ import java.awt.Graphics2D;
 import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
 import java.util.EnumSet;
-import madscience.Game;
+import madscience.views.GameView;
 
 /**
  *
@@ -45,15 +45,15 @@ public class PlayerSprite extends ShooterSprite {
     private int lives = MAX_LIVES;
     private boolean shield = false;
 
-    public PlayerSprite(Game game, SpriteView view) {
+    public PlayerSprite(GameView game, SpriteView view) {
         super(game, view);
     }
 
-    public PlayerSprite(Game game, BufferedImage image) {
+    public PlayerSprite(GameView game, BufferedImage image) {
         this(game, new SpriteView(image));
     }
 
-    public PlayerSprite(Game game) {
+    public PlayerSprite(GameView game) {
         this(game, DEFAULT_VIEW);
     }
 
@@ -85,11 +85,11 @@ public class PlayerSprite extends ShooterSprite {
         double beforeX = x, beforeY = y;
         super.update(sec);
 
-        EnumSet<Game.Border> borders = game.getBorders(this);
-        if (borders.contains(Game.Border.TOP_BORDER ) ||
-            borders.contains(Game.Border.BOTTOM_BORDER) ||
-            borders.contains(Game.Border.LEFT_BORDER) ||
-            borders.contains(Game.Border.RIGHT_BORDER)) {
+        EnumSet<GameView.Border> borders = game.getBorders(this);
+        if (borders.contains(GameView.Border.TOP_BORDER ) ||
+            borders.contains(GameView.Border.BOTTOM_BORDER) ||
+            borders.contains(GameView.Border.LEFT_BORDER) ||
+            borders.contains(GameView.Border.RIGHT_BORDER)) {
             x = beforeX;
             y = beforeY;
             setSpeedXY(0, 0);

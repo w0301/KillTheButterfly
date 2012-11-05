@@ -4,7 +4,7 @@ import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
-import madscience.Game;
+import madscience.views.GameView;
 
 /**
  *
@@ -13,6 +13,8 @@ import madscience.Game;
 public class BossSprite extends EnemySprite {
     public static final BufferedImage DEFAULT_IMG;
 
+    boolean oscillationStarted = false;
+
     static {
         DEFAULT_IMG = new BufferedImage(70, 100, BufferedImage.TYPE_INT_ARGB);
         Graphics2D g = DEFAULT_IMG.createGraphics();
@@ -20,24 +22,25 @@ public class BossSprite extends EnemySprite {
         g.draw(new Rectangle2D.Double(0, 0, DEFAULT_IMG.getWidth() - 1, DEFAULT_IMG.getHeight() - 1));
     }
 
-    public BossSprite(Game game, BufferedImage image, int lives) {
+    public BossSprite(GameView game, BufferedImage image, int lives) {
         super(game, image, lives);
     }
 
-    public BossSprite(Game game, int lives) {
+    public BossSprite(GameView game, int lives) {
         this(game, DEFAULT_IMG, lives);
     }
 
     @Override
     public boolean canOscillate() {
-        return x <= game.getCanvasWidth() / 2;
+        return x <= game.getWidth() - getWidth() * 1.5;
     }
 
     @Override
     public void update(double sec) {
-        if (canOscillate()) {
+        if (canOscillate() && !oscillationStarted) {
             setSpeedXY(0, 0);
             game.setGameSpeed(0);
+            oscillationStarted = true;
         }
         super.update(sec);
     }

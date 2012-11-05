@@ -3,7 +3,7 @@ package madscience.sprites;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import javax.imageio.ImageIO;
-import madscience.Game;
+import madscience.views.GameView;
 
 /**
  *
@@ -35,11 +35,11 @@ public abstract class ElixirSprite extends MovableSprite {
         }
     }
 
-    public ElixirSprite(Game game, SpriteView view) {
+    public ElixirSprite(GameView game, SpriteView view) {
         super(game, view);
     }
 
-    public ElixirSprite(Game game, BufferedImage image) {
+    public ElixirSprite(GameView game, BufferedImage image) {
         this(game, new SpriteView(image));
     }
 

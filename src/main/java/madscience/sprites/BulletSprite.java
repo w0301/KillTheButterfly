@@ -5,7 +5,7 @@ import java.awt.Graphics2D;
 import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
 import java.util.EnumSet;
-import madscience.Game;
+import madscience.views.GameView;
 
 /**
  *
@@ -23,17 +23,17 @@ public class BulletSprite extends MovableSprite {
 
     AbstractSprite owner;
 
-    public BulletSprite(Game game, AbstractSprite owner, SpriteView view) {
+    public BulletSprite(GameView game, AbstractSprite owner, SpriteView view) {
         super(game, view);
         this.owner = owner;
     }
 
-    public BulletSprite(Game game, AbstractSprite owner, BufferedImage image) {
+    public BulletSprite(GameView game, AbstractSprite owner, BufferedImage image) {
         super(game, new SpriteView(image));
         this.owner = owner;
     }
 
-    public BulletSprite(Game game, AbstractSprite owner) {
+    public BulletSprite(GameView game, AbstractSprite owner) {
         this(game, owner, DEFAULT_IMG);
     }
 
@@ -45,11 +45,11 @@ public class BulletSprite extends MovableSprite {
     public void update(double sec) {
         super.update(sec);
 
-        EnumSet<Game.Border> borders = game.getBorders(this);
-        if (borders.contains(Game.Border.TOP_BORDER) ||
-            borders.contains(Game.Border.BOTTOM_BORDER) ||
-            borders.contains(Game.Border.LEFT_BORDER) ||
-            borders.contains(Game.Border.RIGHT_BORDER)) {
+        EnumSet<GameView.Border> borders = game.getBorders(this);
+        if (borders.contains(GameView.Border.TOP_BORDER) ||
+            borders.contains(GameView.Border.BOTTOM_BORDER) ||
+            borders.contains(GameView.Border.LEFT_BORDER) ||
+            borders.contains(GameView.Border.RIGHT_BORDER)) {
             game.removeSprite(this);
         }
     }

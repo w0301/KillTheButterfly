@@ -7,7 +7,7 @@ import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.List;
-import madscience.Game;
+import madscience.views.GameView;
 
 /**
  *
@@ -40,7 +40,7 @@ public abstract class AbstractSprite implements Cloneable {
         }
     }
 
-    protected final Game game;
+    protected final GameView game;
     protected double x = 0, y = 0;
 
     protected SpriteView currView;
@@ -52,12 +52,12 @@ public abstract class AbstractSprite implements Cloneable {
     protected double animationInterval = -1;
     protected double tillAnimationFlip = -1;
 
-    public AbstractSprite(Game game, SpriteView view) {
+    public AbstractSprite(GameView game, SpriteView view) {
         this.game = game;
         this.defaultView = this.currView = view;
     }
 
-    public AbstractSprite(Game game, BufferedImage image) {
+    public AbstractSprite(GameView game, BufferedImage image) {
         this(game, new SpriteView(image, null));
     }
 

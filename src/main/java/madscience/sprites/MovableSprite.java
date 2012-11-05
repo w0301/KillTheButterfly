@@ -1,6 +1,6 @@
 package madscience.sprites;
 
-import madscience.Game;
+import madscience.views.GameView;
 
 /**
  *
@@ -9,7 +9,7 @@ import madscience.Game;
 public abstract class MovableSprite extends AbstractSprite {
     protected double speedX = 0, speedY = 0;
 
-    public MovableSprite(Game game, SpriteView view) {
+    public MovableSprite(GameView game, SpriteView view) {
         super(game, view);
     }
 
