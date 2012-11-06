@@ -47,12 +47,12 @@ public abstract class ShooterSprite extends MovableSprite {
 
     }
 
-    List<Gun> guns;
-    boolean shooting = false;
+    private List<Gun> guns;
+    private boolean shooting = false;
 
     // in miliseconds
-    long shootingInterval = 0;
-    double shootInTime = 0;
+    protected long shootingInterval = 0;
+    protected double shootInTime = 0;
 
     public ShooterSprite(GameView game, SpriteView view) {
         super(game, view);

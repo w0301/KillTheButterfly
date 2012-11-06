@@ -1,9 +1,6 @@
 package madscience;
 
 import java.awt.Canvas;
-import java.awt.Color;
-import java.awt.Font;
-import java.awt.FontMetrics;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Toolkit;
@@ -13,22 +10,64 @@ import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferStrategy;
+import java.io.InputStream;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import madscience.sprites.PlayerSprite;
+import javax.sound.sampled.AudioFormat;
+import javax.sound.sampled.AudioInputStream;
+import javax.sound.sampled.AudioSystem;
+import javax.sound.sampled.DataLine;
+import javax.sound.sampled.SourceDataLine;
 import madscience.views.CanvasView;
 import madscience.views.GameView;
 import madscience.views.GameViewListener;
+import madscience.views.IndicatorView;
+import madscience.views.MenuView;
 
 /**
  *
  * @author Richard Kakaš
  */
 public final class GameCanvas extends Canvas implements Runnable, ComponentListener, KeyListener, GameViewListener {
-    private static final double LIFE_INDICATOR_WIDTH = 275;
-    private static final double LIFE_INDICATOR_MARGIN = 6;
+    private static final int INDICATOR_HEIGHT = 25;
+    private static final Thread BACKGROUND_SOUND;
+    private static boolean backgroundSoundRunning = false;
+
+    static {
+        final InputStream soundFileIn = GameCanvas.class.getResourceAsStream("/sounds/background.wav");
+
+        BACKGROUND_SOUND = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                byte buffer[] = new byte[10000];
+                try {
+                    AudioInputStream audioInputStream = AudioSystem.getAudioInputStream(soundFileIn);
+                    AudioFormat audioFormat = audioInputStream.getFormat();
+                    DataLine.Info dataLineInfo = new DataLine.Info(SourceDataLine.class, audioFormat);
+
+                    SourceDataLine sourceDataLine = (SourceDataLine) AudioSystem.getLine(dataLineInfo);
+                    sourceDataLine.open(audioFormat);
+                    sourceDataLine.start();
+
+                    audioInputStream.mark(Integer.MAX_VALUE);
+                    while (backgroundSoundRunning) {
+                        int read = audioInputStream.read(buffer, 0, buffer.length);
+                        if (read > 0) sourceDataLine.write(buffer, 0, read);
+                        else audioInputStream.reset();
+                    }
+                    sourceDataLine.drain();
+                    sourceDataLine.close();
+                }
+                catch (Exception e) { }
+            }
+        });
+    }
+
+    private static final int GAME_VIEW_ID = 1;
+    private static final int INDICATOR_VIEW_ID = 2;
+    private static final int NEW_GAME_MENU_VIEW_ID = 3;
 
     private BufferStrategy buffer;
 
@@ -37,7 +76,7 @@ public final class GameCanvas extends Canvas implements Runnable, ComponentListe
     private boolean loopRunning = false;
 
     private Set<Integer> pressedKeys = new HashSet<Integer>();
-    private Map<String, CanvasView> views = new HashMap<String, CanvasView>();
+    private Map<Integer, CanvasView> views = new HashMap<Integer, CanvasView>();
 
     private GameView game = null;
     private int nextGameLevel = 1;
@@ -49,13 +88,13 @@ public final class GameCanvas extends Canvas implements Runnable, ComponentListe
         addKeyListener(this);
     }
 
-    public CanvasView putView(String name, CanvasView view) {
-        views.put(name, view);
+    public CanvasView putView(Integer id, CanvasView view) {
+        views.put(id, view);
         return view;
     }
 
-    public CanvasView getView(String name) {
-        return views.get(name);
+    public CanvasView getView(Integer id) {
+        return views.get(id);
     }
 
     public int getGameWidth() {
@@ -63,15 +102,22 @@ public final class GameCanvas extends Canvas implements Runnable, ComponentListe
     }
 
     public int getGameHeight() {
-        return getHeight() - 25;
+        return getHeight() - INDICATOR_HEIGHT;
     }
 
     public void startGame(GameView newGame) {
         synchronized (loopLock) {
-            game = (GameView) putView("game", newGame);
+            game = (GameView) putView(GAME_VIEW_ID, newGame);
             game.setVisible(true);
             game.setPaused(false);
             game.addGameListener(this);
+
+            IndicatorView indicator = (IndicatorView) putView(INDICATOR_VIEW_ID, new IndicatorView(getWidth(), INDICATOR_HEIGHT, game));
+            indicator.setVisible(true);
+            indicator.setXY(0, 0);
+
+            game.setXY(0, indicator.getHeight());
+            startBackgroundSound();
         }
     }
 
@@ -87,6 +133,7 @@ public final class GameCanvas extends Canvas implements Runnable, ComponentListe
     public void pauseGame(boolean val) {
         synchronized (loopLock) {
             game.setPaused(val);
+            stopBackgroundSound();
         }
     }
 
@@ -101,44 +148,37 @@ public final class GameCanvas extends Canvas implements Runnable, ComponentListe
 
     protected void draw(Graphics gAbs) {
         Graphics2D g = (Graphics2D) gAbs;
-        g.setColor(Color.BLUE);
-        g.fillRect(0, 0, getWidth(), getHeight() - getGameHeight());
-
-        // life indicator for player
-        double onePlayerLifeWidth = LIFE_INDICATOR_WIDTH / PlayerSprite.MAX_LIVES;
-        int currPlayerLives = (game == null) ? 0 : game.getPlayerSprite().getLives();
-        g.setColor(Color.RED);
-        g.fill(new Rectangle2D.Double(LIFE_INDICATOR_MARGIN, LIFE_INDICATOR_MARGIN,
-                                      onePlayerLifeWidth * currPlayerLives,
-                                      getHeight() - getGameHeight() - 2*LIFE_INDICATOR_MARGIN));
-
-        // life indicator for boss
-        int bossMaxLives = (game == null) ? 1 : game.getBossMaxLives();
-        if (bossMaxLives == 0) bossMaxLives = 1;
-        double oneBossLifeWidth = LIFE_INDICATOR_WIDTH / bossMaxLives;
-        int currBossLives = (game == null || game.getBossSprite() == null) ? 0 :
-                                    game.getBossSprite().getLives();
-        g.setColor(Color.RED);
-        g.fill(new Rectangle2D.Double(getWidth() - oneBossLifeWidth * currBossLives - LIFE_INDICATOR_MARGIN,
-                                      LIFE_INDICATOR_MARGIN,
-                                      oneBossLifeWidth * currBossLives,
-                                      getHeight() - getGameHeight() - 2*LIFE_INDICATOR_MARGIN));
-
-        // score indicator
-        String scoreStr = Integer.toString((game == null) ? 0 : game.getPlayerScore());
-        g.setColor(Color.WHITE);
-        g.setFont(new Font(null, 0, getHeight() - getGameHeight()));
-        FontMetrics fontMetrics = g.getFontMetrics();
-        g.drawString(scoreStr, getWidth() / 2.0f - fontMetrics.stringWidth(scoreStr) / 2,
-                               9.0f*(getHeight() - getGameHeight()) / 10.0f);
 
         // drawing canvas views
         synchronized (loopLock) {
             for (CanvasView view : views.values()) {
-                g.translate(getWidth() / 2 - view.getWidth() / 2,
-                            getHeight() / 2 - view.getHeight() / 2 + 12.5);
+                double viewX = view.getX();
+                double viewY = view.getY();
+                if (viewX == -1) viewX = getWidth() / 2 - view.getWidth() / 2;
+                if (viewY == -1) viewY = getHeight() / 2 - view.getHeight() / 2;
+                g.setClip(new Rectangle2D.Double(viewX, viewY, view.getWidth(), view.getHeight()));
+                g.translate(viewX, viewY);
                 view.draw(g);
+                g.translate(-viewX, -viewY);
             }
+        }
+    }
+
+    public static void startBackgroundSound() {
+        backgroundSoundRunning = true;
+        if (!BACKGROUND_SOUND.isAlive())
+            BACKGROUND_SOUND.start();
+    }
+
+    public static void stopBackgroundSound() {
+        boolean stopped = false;
+        backgroundSoundRunning = false;
+        while (!stopped) {
+            try {
+                BACKGROUND_SOUND.join();
+                stopped = true;
+            }
+            catch (InterruptedException e) { }
         }
     }
 
@@ -207,7 +247,21 @@ public final class GameCanvas extends Canvas implements Runnable, ComponentListe
             loopThread.start();
         }
 
-        startNextGame(true);
+        MenuView mainMenu = (MenuView) putView(NEW_GAME_MENU_VIEW_ID, new MenuView(getWidth(), getHeight(), "Main menu"));
+        mainMenu.addItem("New game", new MenuView.Action() {
+            @Override
+            public void doAction(MenuView sender) {
+                startNextGame(true);
+                sender.setVisible(false);
+            }
+        });
+        mainMenu.addItem("Exit", new MenuView.Action() {
+            @Override
+            public void doAction(MenuView sender) {
+                System.exit(0);
+            }
+        });
+        mainMenu.setVisible(true);
     }
 
     @Override
@@ -218,7 +272,6 @@ public final class GameCanvas extends Canvas implements Runnable, ComponentListe
         while (!joined) {
             try {
                 loopThread.join();
-                System.out.println("Joined");
                 joined = true;
             }
             catch (InterruptedException ex) { }

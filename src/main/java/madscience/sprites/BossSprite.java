@@ -4,6 +4,7 @@ import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
+import java.util.Random;
 import madscience.views.GameView;
 
 /**
@@ -13,7 +14,8 @@ import madscience.views.GameView;
 public class BossSprite extends EnemySprite {
     public static final BufferedImage DEFAULT_IMG;
 
-    boolean oscillationStarted = false;
+    private static final Random RAND = new Random();
+    private boolean oscillationStarted = false;
 
     static {
         DEFAULT_IMG = new BufferedImage(70, 100, BufferedImage.TYPE_INT_ARGB);
@@ -28,6 +30,16 @@ public class BossSprite extends EnemySprite {
 
     public BossSprite(GameView game, int lives) {
         this(game, DEFAULT_IMG, lives);
+    }
+
+    @Override
+    public synchronized boolean shoot() {
+        boolean retVal = super.shoot();
+        if (retVal) {
+            int min = (int) (shootingInterval / 4);
+            shootInTime = RAND.nextInt(((int) shootingInterval) - min) + min;
+        }
+        return retVal;
     }
 
     @Override

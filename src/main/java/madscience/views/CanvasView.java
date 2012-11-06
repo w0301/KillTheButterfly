@@ -9,6 +9,7 @@ import java.util.Set;
  * @author Richard Kakaš
  */
 public abstract class CanvasView {
+    private double x = -1, y = -1;
     private final int width, height;
     private boolean visible = false;
     private Set<CanvasViewListener> viewListeners = new HashSet<CanvasViewListener>();
@@ -16,6 +17,27 @@ public abstract class CanvasView {
     public CanvasView(int width, int height) {
         this.width = width;
         this.height = height;
+    }
+
+    public double getX() {
+        return x;
+    }
+
+    public void setX(double x) {
+        this.x = x;
+    }
+
+    public double getY() {
+        return y;
+    }
+
+    public void setY(double y) {
+        this.y = y;
+    }
+
+    public void setXY(double x, double y) {
+        this.x = x;
+        this.y = y;
     }
 
     public int getWidth() {

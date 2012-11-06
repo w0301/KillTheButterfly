@@ -4,7 +4,9 @@ import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
+import java.io.IOException;
 import java.util.EnumSet;
+import javax.imageio.ImageIO;
 import madscience.views.GameView;
 
 /**
@@ -12,6 +14,8 @@ import madscience.views.GameView;
  * @author Richard Kakaš
  */
 public class BulletSprite extends MovableSprite {
+    public static final BufferedImage PLAYER_BULLET_IMG;
+    public static final BufferedImage ENEMY_BULLET_IMG;
     public static final BufferedImage DEFAULT_IMG;
 
     static {
@@ -19,6 +23,18 @@ public class BulletSprite extends MovableSprite {
         Graphics2D g = DEFAULT_IMG.createGraphics();
         g.setColor(Color.YELLOW);
         g.draw(new Rectangle2D.Double(0, 0, DEFAULT_IMG.getWidth() - 1, DEFAULT_IMG.getHeight() - 1));
+
+        BufferedImage playerBulletImg = DEFAULT_IMG;
+        BufferedImage enemyBulletImg = DEFAULT_IMG;
+        try {
+            playerBulletImg = ImageIO.read(ElixirSprite.class.getResourceAsStream("/bullets/player_bullet.png"));
+            enemyBulletImg = ImageIO.read(ElixirSprite.class.getResourceAsStream("/bullets/enemy_bullet.png"));
+        }
+        catch (IOException ex) { }
+        finally {
+            PLAYER_BULLET_IMG = playerBulletImg;
+            ENEMY_BULLET_IMG = enemyBulletImg;
+        }
     }
 
     AbstractSprite owner;

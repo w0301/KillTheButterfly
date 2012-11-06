@@ -37,6 +37,24 @@
                     </archive>
                 </configuration>
             </plugin>
+
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>appassembler-maven-plugin</artifactId>
+                <version>1.3</version>
+                <configuration>
+                    <extraJvmArguments>
+                        -Dsun.java2d.d3d=true
+                        -Dsun.java2d.opengl=true
+                    </extraJvmArguments>
+                    <programs>
+                        <program>
+                            <mainClass>madscience.App</mainClass>
+                            <name>run</name>
+                        </program>
+                    </programs>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
 

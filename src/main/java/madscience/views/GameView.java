@@ -5,6 +5,7 @@ import java.awt.Graphics2D;
 import java.awt.event.KeyEvent;
 import java.awt.geom.AffineTransform;
 import java.awt.image.BufferedImage;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -15,17 +16,14 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Random;
 import java.util.Set;
+import javax.imageio.ImageIO;
 import madscience.sprites.AbstractSprite;
 import madscience.sprites.BossSprite;
+import madscience.sprites.BulletSprite;
 import madscience.sprites.ElixirSprite;
 import madscience.sprites.EnemySprite;
 import madscience.sprites.PlayerSprite;
 import madscience.sprites.ShooterSprite;
-
-/*
- * TODO:
- *  - Menu for game canvas
- */
 
 /**
  *
@@ -33,14 +31,23 @@ import madscience.sprites.ShooterSprite;
  */
 public final class GameView extends CanvasView {
     private static final BufferedImage BACKGROUND_BLOCK_IMG;
+    private static final Random RAND = new Random();
 
     static {
-        BACKGROUND_BLOCK_IMG = new BufferedImage(50, 50, BufferedImage.TYPE_INT_ARGB);
-        Graphics2D g = BACKGROUND_BLOCK_IMG.createGraphics();
+        BufferedImage bgBlockImg = new BufferedImage(50, 50, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g = bgBlockImg.createGraphics();
         g.setColor(Color.BLACK);
-        g.fillRect(0, 0, BACKGROUND_BLOCK_IMG.getWidth(), BACKGROUND_BLOCK_IMG.getHeight());
+        g.fillRect(0, 0, bgBlockImg.getWidth(), bgBlockImg.getHeight());
         g.setColor(Color.GRAY);
-        g.drawRect(3, 3, BACKGROUND_BLOCK_IMG.getWidth() - 3, BACKGROUND_BLOCK_IMG.getHeight() - 3);
+        g.drawRect(3, 3, bgBlockImg.getWidth() - 3, bgBlockImg.getHeight() - 3);
+
+        try {
+            bgBlockImg = ImageIO.read(ElixirSprite.class.getResourceAsStream("/background/background_block.png"));
+        }
+        catch (IOException ex) { }
+        finally {
+            BACKGROUND_BLOCK_IMG = bgBlockImg;
+        }
     }
 
     // borders constants
@@ -52,7 +59,6 @@ public final class GameView extends CanvasView {
     }
 
     private Set<GameViewListener> gameListeners = new HashSet<GameViewListener>();
-    private static Random rand = new Random();
 
     private BufferedImage backgroundImg;
     private double backgroundOffset = 0;
@@ -120,7 +126,7 @@ public final class GameView extends CanvasView {
 
     private static AbstractSprite pickPossibleSprite(List<SpritePossibility> list) {
         double cumulativeProbability = 0.0;
-        double randomProbability = rand.nextDouble();
+        double randomProbability = RAND.nextDouble();
         for (SpritePossibility spritePos : list) {
             cumulativeProbability += spritePos.probability;
             if (randomProbability <= cumulativeProbability) {
@@ -151,7 +157,7 @@ public final class GameView extends CanvasView {
         playerSprite.setXY(playerSprite.getWidth() * 1.25,
                            getHeight() / 2 - playerSprite.getHeight() / 2);
         playerSprite.addGun(new ShooterSprite.Gun(playerSprite.getWidth(), playerSprite.getHeight() / 2,
-                                                  playerBulletSpeed, 0));
+                                                  playerBulletSpeed, 0, BulletSprite.PLAYER_BULLET_IMG));
         playerSprite.setShootingInterval(playerShootingInterval);
         refreshPlayerView();
 
@@ -356,7 +362,7 @@ public final class GameView extends CanvasView {
         // adding auto generated enemies
         tillEnemyGen -= sec * 1000;
         if (enemiesToGen > 0 && tillEnemyGen <= 0) {
-            int toGen = rand.nextInt(maxEnemiesToGen - minEnemiesToGen + 1) + minEnemiesToGen;
+            int toGen = RAND.nextInt(maxEnemiesToGen - minEnemiesToGen + 1) + minEnemiesToGen;
             toGen = Math.min(toGen, enemiesToGen);
             for (int i = 0; i < toGen; i++) {
                 AbstractSprite sprite = pickPossibleSprite(possibleEnemies);
@@ -364,7 +370,7 @@ public final class GameView extends CanvasView {
                 if (sprite != null && sprite instanceof EnemySprite) {
                     EnemySprite enemy = (EnemySprite) sprite;
                     enemy.setXY(getWidth() - enemy.getWidth() - 1,
-                                rand.nextInt(getHeight() - (int) enemy.getHeight() - 1) + 1);
+                                RAND.nextInt(getHeight() - (int) enemy.getHeight() - 1) + 1);
                     enemy.setSpeedXY(-origGameSpeed, 0);
 
                     addSprite(enemy);
@@ -390,7 +396,7 @@ public final class GameView extends CanvasView {
             if (sprite != null && sprite instanceof ElixirSprite) {
                 ElixirSprite elixir = (ElixirSprite) sprite;
                 elixir.setXY(getWidth() - elixir.getWidth() - 1,
-                             rand.nextInt(getHeight() - (int) elixir.getHeight() - 1) + 1);
+                             RAND.nextInt(getHeight() - (int) elixir.getHeight() - 1) + 1);
                 elixir.setSpeedXY(-origGameSpeed, 0);
 
                 addSprite(elixir);
