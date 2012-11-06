@@ -25,7 +25,7 @@ public class IndicatorView extends CanvasView {
 
     @Override
     public void draw(Graphics2D g) {
-        //if (!isVisible()) return;
+        if (!isVisible()) return;
 
         g.setColor(Color.BLUE);
         g.fillRect(0, 0, getWidth(), getHeight());
@@ -45,7 +45,7 @@ public class IndicatorView extends CanvasView {
         int currBossLives = (game == null || game.getBossSprite() == null) ? 0 :
                                     game.getBossSprite().getLives();
         g.setColor(Color.RED);
-        g.fill(new Rectangle2D.Double(getWidth() - oneBossLifeWidth * currBossLives - 2*LIFE_INDICATOR_MARGIN,
+        g.fill(new Rectangle2D.Double(getWidth() - oneBossLifeWidth * currBossLives - LIFE_INDICATOR_MARGIN,
                                       LIFE_INDICATOR_MARGIN,
                                       oneBossLifeWidth * currBossLives,
                                       getHeight() - 2*LIFE_INDICATOR_MARGIN));

@@ -120,8 +120,16 @@ public class MenuView extends CanvasView {
     }
 
     @Override
+    public void setVisible(boolean val) {
+        if (isVisible() != val) currentItem = 0;
+        super.setVisible(val);
+    }
+
+    @Override
     public void draw(Graphics2D g) {
         if (!isVisible()) return;
+
+        g.clearRect(0, 0, getWidth(), getHeight());
 
         Rectangle2D titleBounds = TITLE_FONT.getStringBounds(title, g.getFontRenderContext());
 

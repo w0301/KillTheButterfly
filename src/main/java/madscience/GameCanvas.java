@@ -11,10 +11,11 @@ import java.awt.event.KeyListener;
 import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferStrategy;
 import java.io.InputStream;
-import java.util.HashMap;
+import java.net.URL;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.AudioInputStream;
 import javax.sound.sampled.AudioSystem;
@@ -32,18 +33,19 @@ import madscience.views.MenuView;
  */
 public final class GameCanvas extends Canvas implements Runnable, ComponentListener, KeyListener, GameViewListener {
     private static final int INDICATOR_HEIGHT = 25;
-    private static final Thread BACKGROUND_SOUND;
+    private static final Runnable BACKGROUND_SOUND;
+
+    private static Thread backgroundSoundThread = null;
     private static boolean backgroundSoundRunning = false;
 
     static {
-        final InputStream soundFileIn = GameCanvas.class.getResourceAsStream("/sounds/background.wav");
-
-        BACKGROUND_SOUND = new Thread(new Runnable() {
+        BACKGROUND_SOUND = new Runnable() {
             @Override
             public void run() {
                 byte buffer[] = new byte[10000];
                 try {
-                    AudioInputStream audioInputStream = AudioSystem.getAudioInputStream(soundFileIn);
+                    URL soundFile = GameCanvas.class.getResource("/sounds/background.wav");
+                    AudioInputStream audioInputStream = AudioSystem.getAudioInputStream(soundFile);
                     AudioFormat audioFormat = audioInputStream.getFormat();
                     DataLine.Info dataLineInfo = new DataLine.Info(SourceDataLine.class, audioFormat);
 
@@ -62,12 +64,14 @@ public final class GameCanvas extends Canvas implements Runnable, ComponentListe
                 }
                 catch (Exception e) { }
             }
-        });
+        };
     }
 
     private static final int GAME_VIEW_ID = 1;
     private static final int INDICATOR_VIEW_ID = 2;
     private static final int NEW_GAME_MENU_VIEW_ID = 3;
+    private static final int LEVEL_CLEARED_MENU_VIEW_ID = 4;
+    private static final int GAME_LOST_MENU_VIEW_ID = 5;
 
     private BufferStrategy buffer;
 
@@ -76,7 +80,7 @@ public final class GameCanvas extends Canvas implements Runnable, ComponentListe
     private boolean loopRunning = false;
 
     private Set<Integer> pressedKeys = new HashSet<Integer>();
-    private Map<Integer, CanvasView> views = new HashMap<Integer, CanvasView>();
+    private Map<Integer, CanvasView> views = new ConcurrentHashMap<Integer, CanvasView>();
 
     private GameView game = null;
     private int nextGameLevel = 1;
@@ -122,12 +126,14 @@ public final class GameCanvas extends Canvas implements Runnable, ComponentListe
     }
 
     public void startNextGame(boolean reset) {
-        int score = 0;
-        if (game == null || reset) nextGameLevel = 1;
-        else score = game.getPlayerScore();
-        GameView newGame = GameFactory.createGame(getGameWidth(), getGameHeight(), nextGameLevel++);
-        newGame.addPlayerScore(score);
-        startGame(newGame);
+        synchronized (loopLock) {
+            int score = 0;
+            if (game == null || reset) nextGameLevel = 1;
+            else score = game.getPlayerScore();
+            GameView newGame = GameFactory.createGame(getGameWidth(), getGameHeight(), nextGameLevel++);
+            newGame.addPlayerScore(score);
+            startGame(newGame);
+        }
     }
 
     public void pauseGame(boolean val) {
@@ -140,6 +146,7 @@ public final class GameCanvas extends Canvas implements Runnable, ComponentListe
     protected void update(double sec) {
         synchronized (loopLock) {
             for (CanvasView view : views.values()) {
+                if (view == null) continue;
                 view.processKeys(pressedKeys);
                 view.update(sec);
             }
@@ -152,6 +159,7 @@ public final class GameCanvas extends Canvas implements Runnable, ComponentListe
         // drawing canvas views
         synchronized (loopLock) {
             for (CanvasView view : views.values()) {
+                if (view == null) continue;
                 double viewX = view.getX();
                 double viewY = view.getY();
                 if (viewX == -1) viewX = getWidth() / 2 - view.getWidth() / 2;
@@ -166,16 +174,20 @@ public final class GameCanvas extends Canvas implements Runnable, ComponentListe
 
     public static void startBackgroundSound() {
         backgroundSoundRunning = true;
-        if (!BACKGROUND_SOUND.isAlive())
-            BACKGROUND_SOUND.start();
+        if (backgroundSoundThread == null) {
+            backgroundSoundThread = new Thread(BACKGROUND_SOUND);
+            backgroundSoundThread.start();
+        }
     }
 
     public static void stopBackgroundSound() {
+        if (backgroundSoundThread == null) return;
         boolean stopped = false;
         backgroundSoundRunning = false;
         while (!stopped) {
             try {
-                BACKGROUND_SOUND.join();
+                backgroundSoundThread.join();
+                backgroundSoundThread = null;
                 stopped = true;
             }
             catch (InterruptedException e) { }
@@ -219,13 +231,17 @@ public final class GameCanvas extends Canvas implements Runnable, ComponentListe
     }
 
     @Override
-    public synchronized void keyPressed(KeyEvent ke) {
-        pressedKeys.add(ke.getKeyCode());
+    public void keyPressed(KeyEvent ke) {
+        synchronized (loopLock) {
+            pressedKeys.add(ke.getKeyCode());
+        }
     }
 
     @Override
-    public synchronized void keyReleased(KeyEvent ke) {
-        pressedKeys.remove(ke.getKeyCode());
+    public void keyReleased(KeyEvent ke) {
+        synchronized (loopLock) {
+            pressedKeys.remove(ke.getKeyCode());
+        }
     }
 
     @Override
@@ -238,15 +254,6 @@ public final class GameCanvas extends Canvas implements Runnable, ComponentListe
 
     @Override
     public void componentShown(ComponentEvent ce) {
-        createBufferStrategy(2);
-        buffer = getBufferStrategy();
-
-        if (loopThread == null || loopThread.getState() == Thread.State.TERMINATED) {
-            loopThread = new Thread(this);
-            loopRunning = true;
-            loopThread.start();
-        }
-
         MenuView mainMenu = (MenuView) putView(NEW_GAME_MENU_VIEW_ID, new MenuView(getWidth(), getHeight(), "Main menu"));
         mainMenu.addItem("New game", new MenuView.Action() {
             @Override
@@ -262,6 +269,52 @@ public final class GameCanvas extends Canvas implements Runnable, ComponentListe
             }
         });
         mainMenu.setVisible(true);
+
+        MenuView levelClearedMenu = (MenuView) putView(LEVEL_CLEARED_MENU_VIEW_ID, new MenuView(getWidth(), getHeight(), "Level cleared"));
+        levelClearedMenu.addItem("Next level", new MenuView.Action() {
+            @Override
+            public void doAction(MenuView sender) {
+                startNextGame(false);
+                sender.setVisible(false);
+            }
+        });
+        levelClearedMenu.addItem("New game", new MenuView.Action() {
+            @Override
+            public void doAction(MenuView sender) {
+                startNextGame(true);
+                sender.setVisible(false);
+            }
+        });
+        levelClearedMenu.addItem("Exit", new MenuView.Action() {
+            @Override
+            public void doAction(MenuView sender) {
+                System.exit(0);
+            }
+        });
+
+        MenuView gameLostMenu = (MenuView) putView(GAME_LOST_MENU_VIEW_ID, new MenuView(getWidth(), getHeight(), "You lose"));
+        gameLostMenu.addItem("New game", new MenuView.Action() {
+            @Override
+            public void doAction(MenuView sender) {
+                startNextGame(true);
+                sender.setVisible(false);
+            }
+        });
+        gameLostMenu.addItem("Exit", new MenuView.Action() {
+            @Override
+            public void doAction(MenuView sender) {
+                System.exit(0);
+            }
+        });
+
+        createBufferStrategy(2);
+        buffer = getBufferStrategy();
+
+        if (loopThread == null || loopThread.getState() == Thread.State.TERMINATED) {
+            loopThread = new Thread(this);
+            loopRunning = true;
+            loopThread.start();
+        }
     }
 
     @Override
@@ -280,7 +333,17 @@ public final class GameCanvas extends Canvas implements Runnable, ComponentListe
 
     @Override
     public void gameEnded(GameView game, boolean won) {
-        startNextGame(!won);
+        if (game != null) {
+            game.setVisible(false);
+            getView(INDICATOR_VIEW_ID).setVisible(false);
+        }
+        CanvasView menu;
+        if (won) menu = getView(LEVEL_CLEARED_MENU_VIEW_ID);
+        else menu = getView(GAME_LOST_MENU_VIEW_ID);
+        if (menu != null) {
+            menu.setVisible(true);
+        }
+        stopBackgroundSound();
     }
 
     @Override
