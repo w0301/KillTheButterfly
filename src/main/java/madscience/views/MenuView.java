@@ -100,14 +100,14 @@ public class MenuView extends CanvasView {
     public void selectPrevItem() {
         if (currentItem < 0 || currentItem >= items.size()) return;
 
-        for (int i = 0; i < currentItem; i++) {
+        for (int i = currentItem - 1; i >= 0; i--) {
             if (items.get(i).isSelectable()) {
                 currentItem = i;
                 return;
             }
         }
 
-        for (int i = currentItem + 1; i < items.size(); i++) {
+        for (int i = items.size() - 1; i > currentItem; i--) {
             if (items.get(i).isSelectable()) {
                 currentItem = i;
                 return;

@@ -8,6 +8,7 @@ import java.awt.event.ComponentEvent;
 import java.awt.event.ComponentListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
+import java.awt.event.MouseEvent;
 import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferStrategy;
 import java.io.InputStream;
@@ -21,6 +22,7 @@ import javax.sound.sampled.AudioInputStream;
 import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.DataLine;
 import javax.sound.sampled.SourceDataLine;
+import javax.swing.event.MouseInputListener;
 import madscience.views.CanvasView;
 import madscience.views.GameView;
 import madscience.views.GameViewListener;
@@ -31,7 +33,7 @@ import madscience.views.MenuView;
  *
  * @author Richard Kakaš
  */
-public final class GameCanvas extends Canvas implements Runnable, ComponentListener, KeyListener, GameViewListener {
+public final class GameCanvas extends Canvas implements Runnable, ComponentListener, KeyListener, MouseInputListener, GameViewListener {
     private static final int INDICATOR_HEIGHT = 25;
     private static final Runnable BACKGROUND_SOUND;
 
@@ -81,9 +83,12 @@ public final class GameCanvas extends Canvas implements Runnable, ComponentListe
     private boolean loopRunning = false;
 
     private Set<Integer> pressedKeys = new HashSet<Integer>();
-    private Map<Integer, CanvasView> views = new ConcurrentHashMap<Integer, CanvasView>();
+    private int lastMouseX = 0, lastMouseY = 0;
+    private Set<Integer> pressedMouseButtons = new HashSet<Integer>();
 
+    private Map<Integer, CanvasView> views = new ConcurrentHashMap<Integer, CanvasView>();
     private GameView game = null;
+
     private int nextGameLevel = 1;
 
     public GameCanvas() {
@@ -149,6 +154,7 @@ public final class GameCanvas extends Canvas implements Runnable, ComponentListe
             for (CanvasView view : views.values()) {
                 if (view == null) continue;
                 view.processKeys(pressedKeys);
+                view.processMouse(lastMouseX, lastMouseY, pressedMouseButtons);
                 view.update(sec);
             }
         }
@@ -227,23 +233,30 @@ public final class GameCanvas extends Canvas implements Runnable, ComponentListe
         }
     }
 
+
     @Override
-    public void keyTyped(KeyEvent ke) {
+    public void gameEnded(GameView game, boolean won) {
+        if (game != null) {
+            game.setVisible(false);
+            getView(INDICATOR_VIEW_ID).setVisible(false);
+        }
+        CanvasView menu;
+        if (won) menu = getView(LEVEL_CLEARED_MENU_VIEW_ID);
+        else menu = getView(GAME_LOST_MENU_VIEW_ID);
+        if (menu != null) {
+            menu.setVisible(true);
+        }
+        stopBackgroundSound();
     }
 
     @Override
-    public void keyPressed(KeyEvent ke) {
-        synchronized (loopLock) {
-            pressedKeys.add(ke.getKeyCode());
-        }
+    public void gamePaused(GameView game) {
     }
 
     @Override
-    public void keyReleased(KeyEvent ke) {
-        synchronized (loopLock) {
-            pressedKeys.remove(ke.getKeyCode());
-        }
+    public void gameUnpaused(GameView game) {
     }
+
 
     @Override
     public void componentResized(ComponentEvent ce) {
@@ -255,7 +268,7 @@ public final class GameCanvas extends Canvas implements Runnable, ComponentListe
 
     @Override
     public void componentShown(ComponentEvent ce) {
-        MenuView mainMenu = (MenuView) putView(NEW_GAME_MENU_VIEW_ID, new MenuView(getWidth(), getHeight(), "Main menu"));
+        MenuView mainMenu = new MenuView(getWidth(), getHeight(), "Main menu");
         mainMenu.addItem("New game", new MenuView.Action() {
             @Override
             public void doAction(MenuView sender) {
@@ -269,9 +282,9 @@ public final class GameCanvas extends Canvas implements Runnable, ComponentListe
                 System.exit(0);
             }
         });
-        mainMenu.setVisible(true);
+        putView(NEW_GAME_MENU_VIEW_ID, mainMenu);
 
-        MenuView levelClearedMenu = (MenuView) putView(LEVEL_CLEARED_MENU_VIEW_ID, new MenuView(getWidth(), getHeight(), "Level cleared"));
+        MenuView levelClearedMenu = new MenuView(getWidth(), getHeight(), "Level cleared");
         levelClearedMenu.addItem("Next level", new MenuView.Action() {
             @Override
             public void doAction(MenuView sender) {
@@ -292,8 +305,9 @@ public final class GameCanvas extends Canvas implements Runnable, ComponentListe
                 System.exit(0);
             }
         });
+        putView(LEVEL_CLEARED_MENU_VIEW_ID, levelClearedMenu);
 
-        MenuView gameLostMenu = (MenuView) putView(GAME_LOST_MENU_VIEW_ID, new MenuView(getWidth(), getHeight(), "You lose"));
+        MenuView gameLostMenu = new MenuView(getWidth(), getHeight(), "You lose");
         gameLostMenu.addItem("New game", new MenuView.Action() {
             @Override
             public void doAction(MenuView sender) {
@@ -307,6 +321,10 @@ public final class GameCanvas extends Canvas implements Runnable, ComponentListe
                 System.exit(0);
             }
         });
+        putView(GAME_LOST_MENU_VIEW_ID, gameLostMenu);
+
+
+        mainMenu.setVisible(true);
 
         createBufferStrategy(2);
         buffer = getBufferStrategy();
@@ -333,26 +351,59 @@ public final class GameCanvas extends Canvas implements Runnable, ComponentListe
     }
 
     @Override
-    public void gameEnded(GameView game, boolean won) {
-        if (game != null) {
-            game.setVisible(false);
-            getView(INDICATOR_VIEW_ID).setVisible(false);
-        }
-        CanvasView menu;
-        if (won) menu = getView(LEVEL_CLEARED_MENU_VIEW_ID);
-        else menu = getView(GAME_LOST_MENU_VIEW_ID);
-        if (menu != null) {
-            menu.setVisible(true);
-        }
-        stopBackgroundSound();
+    public void keyTyped(KeyEvent ke) {
     }
 
     @Override
-    public void gamePaused(GameView game) {
+    public void keyPressed(KeyEvent ke) {
+        synchronized (loopLock) {
+            pressedKeys.add(ke.getKeyCode());
+        }
     }
 
     @Override
-    public void gameUnpaused(GameView game) {
+    public void keyReleased(KeyEvent ke) {
+        synchronized (loopLock) {
+            pressedKeys.remove(ke.getKeyCode());
+        }
+    }
+
+    @Override
+    public void mouseClicked(MouseEvent me) {
+    }
+
+    @Override
+    public void mousePressed(MouseEvent me) {
+        synchronized (loopLock) {
+            pressedMouseButtons.add(me.getButton());
+        }
+    }
+
+    @Override
+    public void mouseReleased(MouseEvent me) {
+        synchronized (loopLock) {
+            pressedMouseButtons.remove(me.getButton());
+        }
+    }
+
+    @Override
+    public void mouseEntered(MouseEvent me) {
+    }
+
+    @Override
+    public void mouseExited(MouseEvent me) {
+    }
+
+    @Override
+    public void mouseDragged(MouseEvent me) {
+    }
+
+    @Override
+    public void mouseMoved(MouseEvent me) {
+        synchronized (loopLock) {
+            lastMouseX = me.getX();
+            lastMouseY = me.getY();
+        }
     }
 
 }

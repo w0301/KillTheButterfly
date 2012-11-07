@@ -3,7 +3,9 @@ package madscience.views;
 import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  *
@@ -22,12 +24,22 @@ public class SlideshowView extends CanvasView {
 
     }
 
+    private Set<SlideshowListener> slideshowListeners = new HashSet<SlideshowListener>();
+
     private List<Page> pages = new ArrayList<Page>();
     private int currentPage = 0;
     private double currentTime = 0;
 
     public SlideshowView(int width, int height) {
         super(width, height);
+    }
+
+    public void addSlideshowListener(SlideshowListener l) {
+        slideshowListeners.add(l);
+    }
+
+    public void removeSlideshowListener(SlideshowListener l) {
+        slideshowListeners.remove(l);
     }
 
     public int addPage(BufferedImage image, double time) {
@@ -52,6 +64,11 @@ public class SlideshowView extends CanvasView {
         if (currentTime >= pages.get(currentPage).time) {
             currentPage++;
             currentTime = 0;
+        }
+        if (currentPage >= pages.size()) {
+            currentPage--;
+            for (SlideshowListener l : slideshowListeners)
+                l.slideshowEnded(this);
         }
     }
 

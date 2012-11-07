@@ -76,6 +76,9 @@ public abstract class CanvasView {
     }
 
     public void processKeys(Set<Integer> keys) {
-    } 
+    }
+
+    public void processMouse(int mouseX, int mouseY, Set<Integer> buttons) {
+    }
 
 }
