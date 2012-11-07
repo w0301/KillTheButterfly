@@ -5,6 +5,7 @@ import java.awt.Font;
 import java.awt.Graphics2D;
 import java.awt.event.KeyEvent;
 import java.awt.geom.Rectangle2D;
+import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -16,16 +17,10 @@ import java.util.Set;
 public class MenuView extends CanvasView {
     private static final Font TITLE_FONT = new Font(Font.SANS_SERIF, Font.BOLD, 25);
     private static final Color TITLE_COLOR = Color.GREEN;
-    private static final int TITLE_MARGIN = 5;
 
     private static final Font ITEM_FONT = new Font(Font.SANS_SERIF, Font.PLAIN, 20);
     private static final Color ITEM_COLOR = Color.GRAY;
     private static final Color ITEM_SELECTED_COLOR = Color.YELLOW;
-
-
-    static {
-
-    }
 
     public static interface Action {
         public void doAction(MenuView sender);
@@ -47,6 +42,7 @@ public class MenuView extends CanvasView {
 
     private String title = null;
     private List<Item> items = new ArrayList<Item>();
+    private BufferedImage backgroundImg = null;
 
     private int currentItem = 0;
     private boolean canDoAction = true;
@@ -119,6 +115,14 @@ public class MenuView extends CanvasView {
         }
     }
 
+    public BufferedImage getBackground() {
+        return backgroundImg;
+    }
+
+    public void setBackground(BufferedImage backgroundImg) {
+        this.backgroundImg = backgroundImg;
+    }
+
     @Override
     public void setVisible(boolean val) {
         if (isVisible() != val) currentItem = 0;
@@ -129,7 +133,8 @@ public class MenuView extends CanvasView {
     public void draw(Graphics2D g) {
         if (!isVisible()) return;
 
-        g.clearRect(0, 0, getWidth(), getHeight());
+        if (backgroundImg != null) g.drawImage(backgroundImg, null, 0, 0);
+        else g.clearRect(0, 0, getWidth(), getHeight());
 
         Rectangle2D titleBounds = TITLE_FONT.getStringBounds(title, g.getFontRenderContext());
 
@@ -159,10 +164,6 @@ public class MenuView extends CanvasView {
             g.drawString(items.get(i).text, getWidth() / 2 - (float) bounds.getWidth() / 2,
                                             (float) menuStartY);
         }
-    }
-
-    @Override
-    public void update(double sec) {
     }
 
     @Override

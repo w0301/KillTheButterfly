@@ -59,12 +59,4 @@ public class IndicatorView extends CanvasView {
                                9.0f*(getHeight()) / 10.0f);
     }
 
-    @Override
-    public void update(double sec) {
-    }
-
-    @Override
-    public void processKeys(Set<Integer> keys) {
-    }
-
 }

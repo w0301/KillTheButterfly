@@ -44,23 +44,24 @@ public final class GameCanvas extends Canvas implements Runnable, ComponentListe
             public void run() {
                 byte buffer[] = new byte[10000];
                 try {
-                    URL soundFile = GameCanvas.class.getResource("/sounds/background.wav");
-                    AudioInputStream audioInputStream = AudioSystem.getAudioInputStream(soundFile);
-                    AudioFormat audioFormat = audioInputStream.getFormat();
-                    DataLine.Info dataLineInfo = new DataLine.Info(SourceDataLine.class, audioFormat);
-
-                    SourceDataLine sourceDataLine = (SourceDataLine) AudioSystem.getLine(dataLineInfo);
-                    sourceDataLine.open(audioFormat);
-                    sourceDataLine.start();
-
-                    audioInputStream.mark(Integer.MAX_VALUE);
                     while (backgroundSoundRunning) {
-                        int read = audioInputStream.read(buffer, 0, buffer.length);
-                        if (read > 0) sourceDataLine.write(buffer, 0, read);
-                        else audioInputStream.reset();
+                        URL soundFile = GameCanvas.class.getResource("/sounds/background.wav");
+                        AudioInputStream audioInputStream = AudioSystem.getAudioInputStream(soundFile);
+                        AudioFormat audioFormat = audioInputStream.getFormat();
+                        DataLine.Info dataLineInfo = new DataLine.Info(SourceDataLine.class, audioFormat);
+
+                        SourceDataLine sourceDataLine = (SourceDataLine) AudioSystem.getLine(dataLineInfo);
+                        sourceDataLine.open(audioFormat);
+                        sourceDataLine.start();
+
+                        while (backgroundSoundRunning) {
+                            int read = audioInputStream.read(buffer, 0, buffer.length);
+                            if (read > 0) sourceDataLine.write(buffer, 0, read);
+                            else break;
+                        }
+                        sourceDataLine.drain();
+                        sourceDataLine.close();
                     }
-                    sourceDataLine.drain();
-                    sourceDataLine.close();
                 }
                 catch (Exception e) { }
             }

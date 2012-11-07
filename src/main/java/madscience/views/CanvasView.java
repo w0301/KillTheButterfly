@@ -71,7 +71,11 @@ public abstract class CanvasView {
     }
 
     public abstract void draw(Graphics2D g);
-    public abstract void update(double sec);
-    public abstract void processKeys(Set<Integer> keys);
+
+    public void update(double sec) {
+    }
+
+    public void processKeys(Set<Integer> keys) {
+    } 
 
 }

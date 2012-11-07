@@ -11,6 +11,10 @@ import javax.swing.SwingUtilities;
 public class App {
 
     public static void main(String[] args) {
+        String os = System.getProperty("os.name").toLowerCase();
+        if (os.equals("windows")) System.setProperty("sun.java2d.d3d", "true");
+        else System.setProperty("sun.java2d.opengl", "true");
+
         SwingUtilities.invokeLater(new Runnable() {
             @Override
             public void run() {
