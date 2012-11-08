@@ -1,10 +1,9 @@
 package madscience.sprites;
 
-import java.awt.Color;
-import java.awt.Graphics2D;
-import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
+import java.io.IOException;
 import java.util.EnumSet;
+import javax.imageio.ImageIO;
 import madscience.views.GameView;
 
 /**
@@ -13,33 +12,25 @@ import madscience.views.GameView;
  */
 public class PlayerSprite extends ShooterSprite {
     public static final int MAX_LIVES = 5;
-    public static final SpriteView DEFAULT_VIEW;
-    public static final SpriteView DEFAULT_VIEW_1;
-    //public static final SpriteView DEFAULT_VIEW_2;
+    public static final SpriteView PLAYER_VIEW_1;
+    public static final SpriteView PLAYER_VIEW_2;
+    public static final SpriteView PLAYER_VIEW_3;
 
     static {
-
-        Rectangle2D bodyRect = new Rectangle2D.Double(0, 0, 49, 64);
-        Rectangle2D legRect = new Rectangle2D.Double(22.5, 65, 5, 30);
-
-        BufferedImage img = new BufferedImage(50, 100, BufferedImage.TYPE_INT_ARGB);
-        Graphics2D g = img.createGraphics();
-        g.setColor(Color.RED);
-        g.draw(bodyRect);
-        g.draw(legRect);
-        DEFAULT_VIEW = new SpriteView(img, new Rectangle2D[] {bodyRect, legRect});
-
-        img = new BufferedImage(50, 100, BufferedImage.TYPE_INT_ARGB);
-        g = img.createGraphics();
-        g.setColor(Color.RED);
-        g.draw(bodyRect);
-        legRect.setRect(12.5, 65, 5, 30);
-        g.draw(legRect);
-        legRect.setRect(32.5, 65, 5, 30);
-        g.draw(legRect);
-        DEFAULT_VIEW_1 = new SpriteView(img, new Rectangle2D[] {bodyRect,
-                                                new Rectangle2D.Double(12.5, 65, 5, 30),
-                                                new Rectangle2D.Double(32.5, 65, 5, 30)});
+        BufferedImage player1Img = new BufferedImage(40, 40, BufferedImage.TYPE_INT_ARGB);
+        BufferedImage player2Img = new BufferedImage(40, 40, BufferedImage.TYPE_INT_ARGB);
+        BufferedImage player3Img = new BufferedImage(40, 40, BufferedImage.TYPE_INT_ARGB);
+        try {
+            player1Img = ImageIO.read(ElixirSprite.class.getResourceAsStream("/player/player1.png"));
+            player2Img = ImageIO.read(ElixirSprite.class.getResourceAsStream("/player/player2.png"));
+            player3Img = ImageIO.read(ElixirSprite.class.getResourceAsStream("/player/player3.png"));
+        }
+        catch (IOException ex) { }
+        finally {
+            PLAYER_VIEW_1 = new SpriteView(player1Img);
+            PLAYER_VIEW_2 = new SpriteView(player2Img);
+            PLAYER_VIEW_3 = new SpriteView(player3Img);
+        }
     }
 
     private int lives = MAX_LIVES;
@@ -54,7 +45,7 @@ public class PlayerSprite extends ShooterSprite {
     }
 
     public PlayerSprite(GameView game) {
-        this(game, DEFAULT_VIEW);
+        this(game, PLAYER_VIEW_1);
     }
 
     public int getLives() {

@@ -83,6 +83,9 @@ public class GameFactory {
             }
         });
 
+        /// elixirs for sequence
+        newGame.createSeqElixirs(level + 3);
+
         return newGame;
     }
 

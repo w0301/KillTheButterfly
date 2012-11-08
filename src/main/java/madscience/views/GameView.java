@@ -4,6 +4,7 @@ import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.event.KeyEvent;
 import java.awt.geom.AffineTransform;
+import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -23,6 +24,7 @@ import madscience.sprites.BulletSprite;
 import madscience.sprites.ElixirSprite;
 import madscience.sprites.EnemySprite;
 import madscience.sprites.PlayerSprite;
+import madscience.sprites.SeqElixirSprite;
 import madscience.sprites.ShooterSprite;
 
 /**
@@ -30,6 +32,7 @@ import madscience.sprites.ShooterSprite;
  * @author Richard Kakaš
  */
 public final class GameView extends CanvasView {
+    private static final double DEFAULT_ENDED__DELAY = 500;
     private static final BufferedImage BACKGROUND_BLOCK_IMG;
     private static final Random RAND = new Random();
 
@@ -62,6 +65,7 @@ public final class GameView extends CanvasView {
 
     private BufferedImage backgroundImg;
     private double backgroundOffset = 0;
+    private double wallHeight = 100;
 
     // game info
     private int playerScore = 0;
@@ -85,18 +89,25 @@ public final class GameView extends CanvasView {
     private double tillEnemyGen = enemiesGenInterval;
     private List<SpritePossibility> possibleEnemies = new ArrayList<SpritePossibility>();
 
+    private int lastElixirsCount = 0;
     private double elixirsGenInterval = 5000;
     private double tillElixirGen = elixirsGenInterval;
     private List<SpritePossibility> possibleElixirs = new ArrayList<SpritePossibility>();
 
+    private List<SeqElixirSprite> seqElixirsToAdd = new LinkedList<SeqElixirSprite>();
+    private int nextSeqElixir = 0;
+    private int seqElixirAfterEnemies = 0;
+    private int nextSeqElixirAfterEnemies = 0;
+
     // pixels / second
     private double gameSpeed = 100;
     private double origGameSpeed = gameSpeed;
-    private double playerSetSpeed = 175;
-    private double playerBulletSpeed = 150;
+    private double playerSetSpeed = 275;
+    private double playerBulletSpeed = 200;
 
     private double speedRatio = 1;
     private double tillUnsetSpeedRatio = -1;
+    private double endedDelay = DEFAULT_ENDED__DELAY;
 
     // player options
     private double playerAnimInterval = 100;
@@ -145,16 +156,18 @@ public final class GameView extends CanvasView {
         backgroundImg = new BufferedImage(BACKGROUND_BLOCK_IMG.getWidth() * bgXCount,
                                           BACKGROUND_BLOCK_IMG.getHeight() * bgYCount, BufferedImage.TYPE_INT_ARGB);
         Graphics2D g = backgroundImg.createGraphics();
+        g.setColor(new Color(200, 200, 200));
+        g.fill(new Rectangle2D.Double(0, 0, backgroundImg.getWidth(), wallHeight));
         for (int y = 0; y < bgYCount; y++) {
             for (int x = 0; x < bgXCount; x++) {
                 g.drawImage(BACKGROUND_BLOCK_IMG, null, x * BACKGROUND_BLOCK_IMG.getWidth(),
-                                                        y * BACKGROUND_BLOCK_IMG.getHeight());
+                                                        (int) wallHeight + y * BACKGROUND_BLOCK_IMG.getHeight());
             }
         }
 
         // sprites logics
         playerSprite = new PlayerSprite(this);
-        playerSprite.setXY(playerSprite.getWidth() * 1.25,
+        playerSprite.setXY(playerSprite.getWidth() * 0.5,
                            getHeight() / 2 - playerSprite.getHeight() / 2);
         playerSprite.addGun(new ShooterSprite.Gun(playerSprite.getWidth(), playerSprite.getHeight() / 2,
                                                   playerBulletSpeed, 0, BulletSprite.PLAYER_BULLET_IMG));
@@ -223,10 +236,12 @@ public final class GameView extends CanvasView {
     }
 
     public void refreshPlayerView() {
-        playerSprite.setDefaultView(PlayerSprite.DEFAULT_VIEW);
+        playerSprite.setDefaultView(PlayerSprite.PLAYER_VIEW_1);
         if (gameSpeed != 0) {
-            playerSprite.addAnimationView(PlayerSprite.DEFAULT_VIEW);
-            playerSprite.addAnimationView(PlayerSprite.DEFAULT_VIEW_1);
+            playerSprite.addAnimationView(PlayerSprite.PLAYER_VIEW_2);
+            playerSprite.addAnimationView(PlayerSprite.PLAYER_VIEW_1);
+            playerSprite.addAnimationView(PlayerSprite.PLAYER_VIEW_3);
+            playerSprite.addAnimationView(PlayerSprite.PLAYER_VIEW_1);
             playerSprite.runAnimation(playerAnimInterval);
         }
         else playerSprite.clearAnimation();
@@ -325,25 +340,61 @@ public final class GameView extends CanvasView {
         elixirsGenInterval = tillElixirGen = interval;
     }
 
+    public void createSeqElixirs(int count) {
+        for (int i = 0; i < count; i++) {
+            SeqElixirSprite sprite;
+            int num = RAND.nextInt(4);
+            switch (num) {
+                case 0:
+                    sprite = new SeqElixirSprite(this, SeqElixirSprite.RED_IMG);
+                    break;
+                case 1:
+                    sprite = new SeqElixirSprite(this, SeqElixirSprite.BLUE_IMG);
+                    break;
+                case 2:
+                    sprite = new SeqElixirSprite(this, SeqElixirSprite.GREEN_IMG);
+                    break;
+                default:
+                    sprite = new SeqElixirSprite(this, SeqElixirSprite.YELLOW_IMG);
+                    break;
+            }
+            seqElixirsToAdd.add(sprite);
+        }
+        nextSeqElixir = 0;
+        seqElixirAfterEnemies = enemiesToGen / count;
+        nextSeqElixirAfterEnemies = seqElixirAfterEnemies;
+    }
+
     @Override
     public void update(double sec) {
-        if (isPaused() || isEnded() || !isVisible()) return;
+        if (isPaused() || !isVisible()) return;
+        if (isEnded()) {
+            endedDelay -= sec * 1000;
+            if (endedDelay <= 0) {
+                for (GameViewListener l : gameListeners)
+                    l.gameEnded(this, isWon());
+            }
+            return;
+        }
 
         // updating background
-        backgroundOffset -= getGameSpeed() * sec * speedRatio;
+        backgroundOffset -= origGameSpeed * sec * speedRatio;
         if (Math.abs(backgroundOffset) >= BACKGROUND_BLOCK_IMG.getWidth())
-        backgroundOffset = 0;
+            backgroundOffset = 0;
 
         // updating current sprites
-        lastEnemiesCount = 0;
         if (tillUnsetSpeedRatio > 0) tillUnsetSpeedRatio -= sec * 1000;
         else if (speedRatio != 1) {
             speedRatio = 1;
             setGameSpeed(origGameSpeed);
         }
+
+        lastEnemiesCount = 0;
+        lastElixirsCount = 0;
         for (AbstractSprite sprite : sprites) {
             sprite.update(sec * speedRatio);
             if (sprite instanceof EnemySprite) lastEnemiesCount++;
+            if (sprite instanceof ElixirSprite || sprite instanceof SeqElixirSprite) lastElixirsCount++;
         }
 
         ListIterator<AbstractSprite> iter1 = sprites.listIterator();
@@ -369,34 +420,45 @@ public final class GameView extends CanvasView {
 
                 if (sprite != null && sprite instanceof EnemySprite) {
                     EnemySprite enemy = (EnemySprite) sprite;
-                    enemy.setXY(getWidth() - enemy.getWidth() - 1,
-                                RAND.nextInt(getHeight() - (int) enemy.getHeight() - 1) + 1);
+                    int minY = (int) wallHeight - (int) enemy.getHeight();
+                    enemy.setXY(getWidth(), RAND.nextInt(getHeight() - 2*minY) + minY - 1);
                     enemy.setSpeedXY(-origGameSpeed, 0);
 
                     addSprite(enemy);
                 }
             }
             enemiesToGen -= toGen;
+            nextSeqElixirAfterEnemies -= toGen;
             tillEnemyGen = enemiesGenInterval;
         }
-        else if (enemiesToGen == 0 && tillEnemyGen <= 0 && bossSprite != null && !bossAdded && lastEnemiesCount == 0) {
-            bossSprite.setXY(getWidth(), getHeight() / 2 - bossSprite.getHeight());
-            bossSprite.setOscillation(bossSprite.getHeight() * 1.5, 5);
+        else if (enemiesToGen == 0 && tillEnemyGen <= 0 && bossSprite != null && !bossAdded && lastEnemiesCount == 0 && lastElixirsCount == 0) {
+            bossSprite.setXY(getWidth(), getHeight() - bossSprite.getHeight() - 1);
+            bossSprite.setOscillation(getHeight() - bossSprite.getHeight(), 10);
             bossSprite.setSpeedXY(-origGameSpeed, 0);
 
             addSprite(bossSprite);
             bossAdded = true;
         }
 
+        // generating elixirs for sequence
+        if (nextSeqElixirAfterEnemies <= 0 && nextSeqElixir < seqElixirsToAdd.size()) {
+            SeqElixirSprite seqElixir = (SeqElixirSprite) seqElixirsToAdd.get(nextSeqElixir++).clone();
+            seqElixir.setXY(getWidth(), wallHeight / 2 - seqElixir.getHeight() / 2);
+            seqElixir.setSpeedXY(-origGameSpeed, 0);
+
+            addSprite(seqElixir);
+            nextSeqElixirAfterEnemies = seqElixirAfterEnemies - Math.abs(nextSeqElixirAfterEnemies);
+        }
+
         // generation elixirs
         tillElixirGen -= sec * 1000;
-        if (tillElixirGen <= 0 && !bossAdded) {
+        if (tillElixirGen <= 0 && !bossAdded && lastEnemiesCount > 0) {
             AbstractSprite sprite = pickPossibleSprite(possibleElixirs);
 
             if (sprite != null && sprite instanceof ElixirSprite) {
                 ElixirSprite elixir = (ElixirSprite) sprite;
-                elixir.setXY(getWidth() - elixir.getWidth() - 1,
-                             RAND.nextInt(getHeight() - (int) elixir.getHeight() - 1) + 1);
+                int minY = Math.max((int) wallHeight, (int) elixir.getHeight());
+                elixir.setXY(getWidth(), RAND.nextInt(getHeight() - 2*minY) + minY - 1);
                 elixir.setSpeedXY(-origGameSpeed, 0);
 
                 addSprite(elixir);
@@ -417,11 +479,6 @@ public final class GameView extends CanvasView {
             sprite.performRemoved();
         }
         spritesToRemove.clear();
-
-        if (isEnded()) {
-            for (GameViewListener l : gameListeners)
-                l.gameEnded(this, isWon());
-        }
     }
 
     @Override

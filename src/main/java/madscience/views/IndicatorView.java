@@ -5,7 +5,6 @@ import java.awt.Font;
 import java.awt.FontMetrics;
 import java.awt.Graphics2D;
 import java.awt.geom.Rectangle2D;
-import java.util.Set;
 import madscience.sprites.PlayerSprite;
 
 /**
@@ -56,7 +55,7 @@ public class IndicatorView extends CanvasView {
         g.setFont(new Font(null, 0, getHeight()));
         FontMetrics fontMetrics = g.getFontMetrics();
         g.drawString(scoreStr, getWidth() / 2.0f - fontMetrics.stringWidth(scoreStr) / 2,
-                               9.0f*(getHeight()) / 10.0f);
+                               9.0f*getHeight() / 10.0f);
     }
 
 }

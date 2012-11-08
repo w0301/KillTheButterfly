@@ -20,24 +20,24 @@ public class EnemySprite extends ShooterSprite {
         DEFAULT_IMG_1 = new BufferedImage(50, 50, BufferedImage.TYPE_INT_ARGB);
         Graphics2D g = DEFAULT_IMG_1.createGraphics();
         g.setColor(Color.BLUE);
-        g.draw(new Rectangle2D.Double(0, 0, DEFAULT_IMG_1.getWidth() - 1, DEFAULT_IMG_1.getHeight() - 1));
+        g.fill(new Rectangle2D.Double(0, 0, DEFAULT_IMG_1.getWidth() - 1, DEFAULT_IMG_1.getHeight() - 1));
 
         DEFAULT_IMG_2 = new BufferedImage(50, 50, BufferedImage.TYPE_INT_ARGB);
         g = DEFAULT_IMG_2.createGraphics();
         g.setColor(Color.GREEN);
-        g.draw(new Rectangle2D.Double(0, 0, DEFAULT_IMG_2.getWidth() - 1, DEFAULT_IMG_2.getHeight() - 1));
+        g.fill(new Rectangle2D.Double(0, 0, DEFAULT_IMG_2.getWidth() - 1, DEFAULT_IMG_2.getHeight() - 1));
 
         DEFAULT_IMG_3 = new BufferedImage(50, 50, BufferedImage.TYPE_INT_ARGB);
         g = DEFAULT_IMG_3.createGraphics();
         g.setColor(Color.PINK);
-        g.draw(new Rectangle2D.Double(0, 0, DEFAULT_IMG_3.getWidth() - 1, DEFAULT_IMG_3.getHeight() - 1));
+        g.fill(new Rectangle2D.Double(0, 0, DEFAULT_IMG_3.getWidth() - 1, DEFAULT_IMG_3.getHeight() - 1));
     }
 
     int lives;
     int startLives;
     double oscillationCenter = 0;
     double oscillationTime = 0;
-    double oscillationAmpl = 50;
+    double oscillationAmpl = 30;
     double oscillationPeriod = 2;
 
     public EnemySprite(GameView game, SpriteView view, int lives) {
@@ -83,19 +83,19 @@ public class EnemySprite extends ShooterSprite {
         return true;
     }
 
-    public double oscillationFunction(double param) {
+    public double oscillationFunction(double param, double period) {
         //if (param < oscillationPeriod / 2) return 2*param / oscillationPeriod;
         //else return -(2 * param) / (oscillationPeriod + 2) + oscillationPeriod / (oscillationPeriod + 2);
-        //double omega = (2 * Math.PI / oscillationPeriod);
+        double omega = (2 * Math.PI / period);
         //return omega * (2 * Math.asin(Math.cos(omega * param))) / Math.PI;
         //return omega * Math.cos(omega * param);
-        return Math.signum(Math.sin((2*Math.PI * param) / oscillationPeriod));
+        return Math.signum(Math.sin(omega * param));
     }
 
     @Override
     public void update(double sec) {
         if (canOscillate()) {
-            speedY = (oscillationAmpl / (oscillationPeriod / 2)) * oscillationFunction(oscillationTime);
+            speedY = (oscillationAmpl / (oscillationPeriod / 4)) * oscillationFunction(oscillationTime, oscillationPeriod);
 
             oscillationTime += sec;
             if (oscillationTime >= oscillationPeriod)

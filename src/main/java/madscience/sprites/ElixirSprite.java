@@ -2,6 +2,7 @@ package madscience.sprites;
 
 import java.awt.image.BufferedImage;
 import java.io.IOException;
+import java.util.EnumSet;
 import javax.imageio.ImageIO;
 import madscience.views.GameView;
 
@@ -49,6 +50,16 @@ public abstract class ElixirSprite extends MovableSprite {
 
     @Override
     public void performRemoved() {
+    }
+
+    @Override
+    public void update(double sec) {
+        super.update(sec);
+
+        EnumSet<GameView.Border> borders = game.getBorders(this);
+        if (borders.contains(GameView.Border.LEFT_BORDER_CROSSED)) {
+            game.removeSprite(this);
+        }
     }
 
     @Override

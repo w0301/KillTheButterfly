@@ -1,10 +1,10 @@
 package madscience.sprites;
 
-import java.awt.Color;
-import java.awt.Graphics2D;
 import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
+import java.io.IOException;
 import java.util.Random;
+import javax.imageio.ImageIO;
 import madscience.views.GameView;
 
 /**
@@ -12,24 +12,29 @@ import madscience.views.GameView;
  * @author Richard Kakaš
  */
 public class BossSprite extends EnemySprite {
-    public static final BufferedImage DEFAULT_IMG;
+    public static final SpriteView DEFAULT_VIEW;
 
     private static final Random RAND = new Random();
     private boolean oscillationStarted = false;
 
     static {
-        DEFAULT_IMG = new BufferedImage(70, 100, BufferedImage.TYPE_INT_ARGB);
-        Graphics2D g = DEFAULT_IMG.createGraphics();
-        g.setColor(Color.ORANGE);
-        g.draw(new Rectangle2D.Double(0, 0, DEFAULT_IMG.getWidth() - 1, DEFAULT_IMG.getHeight() - 1));
+        BufferedImage bossImg = new BufferedImage(70, 100, BufferedImage.TYPE_INT_ARGB);
+        try {
+            bossImg = ImageIO.read(ElixirSprite.class.getResourceAsStream("/enemies/boss.png"));
+        }
+        catch (IOException ex) { }
+        finally {
+            DEFAULT_VIEW = new SpriteView(bossImg, new Rectangle2D[] { new Rectangle2D.Double(20, 0, bossImg.getWidth() - 20, bossImg.getHeight()),
+                                                                       new Rectangle2D.Double(0, 47, 20, 110) });
+        }
     }
 
-    public BossSprite(GameView game, BufferedImage image, int lives) {
+    public BossSprite(GameView game, SpriteView image, int lives) {
         super(game, image, lives);
     }
 
     public BossSprite(GameView game, int lives) {
-        this(game, DEFAULT_IMG, lives);
+        this(game, DEFAULT_VIEW, lives);
     }
 
     @Override

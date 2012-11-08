@@ -159,10 +159,14 @@ public class MenuView extends CanvasView {
             menuStartY += bounds.getHeight();
 
             g.setFont(ITEM_FONT);
-            if (currentItem == i) g.setColor(ITEM_SELECTED_COLOR);
+            double rectYAdd = bounds.getHeight() - 5;
+            bounds.setRect(getWidth() / 2 - bounds.getWidth() / 2, menuStartY - rectYAdd, bounds.getWidth() + 1, bounds.getHeight());
+            if (currentItem == i) {
+                g.setColor(ITEM_SELECTED_COLOR);
+                g.draw(bounds);
+            }
             else g.setColor(ITEM_COLOR);
-            g.drawString(items.get(i).text, getWidth() / 2 - (float) bounds.getWidth() / 2,
-                                            (float) menuStartY);
+            g.drawString(items.get(i).text, (float) bounds.getX(), (float) (bounds.getY() + rectYAdd));
         }
     }
 
