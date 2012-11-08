@@ -4,7 +4,9 @@ import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
+import java.io.IOException;
 import java.util.EnumSet;
+import javax.imageio.ImageIO;
 import madscience.views.GameView;
 
 /**
@@ -12,25 +14,25 @@ import madscience.views.GameView;
  * @author Richard Kakaš
  */
 public class EnemySprite extends ShooterSprite {
-    public static final BufferedImage DEFAULT_IMG_1;
-    public static final BufferedImage DEFAULT_IMG_2;
-    public static final BufferedImage DEFAULT_IMG_3;
+    public static final BufferedImage ENEMY_IMG_1;
+    public static final BufferedImage ENEMY_IMG_2;
+    public static final BufferedImage ENEMY_IMG_3;
 
     static {
-        DEFAULT_IMG_1 = new BufferedImage(50, 50, BufferedImage.TYPE_INT_ARGB);
-        Graphics2D g = DEFAULT_IMG_1.createGraphics();
-        g.setColor(Color.BLUE);
-        g.fill(new Rectangle2D.Double(0, 0, DEFAULT_IMG_1.getWidth() - 1, DEFAULT_IMG_1.getHeight() - 1));
-
-        DEFAULT_IMG_2 = new BufferedImage(50, 50, BufferedImage.TYPE_INT_ARGB);
-        g = DEFAULT_IMG_2.createGraphics();
-        g.setColor(Color.GREEN);
-        g.fill(new Rectangle2D.Double(0, 0, DEFAULT_IMG_2.getWidth() - 1, DEFAULT_IMG_2.getHeight() - 1));
-
-        DEFAULT_IMG_3 = new BufferedImage(50, 50, BufferedImage.TYPE_INT_ARGB);
-        g = DEFAULT_IMG_3.createGraphics();
-        g.setColor(Color.PINK);
-        g.fill(new Rectangle2D.Double(0, 0, DEFAULT_IMG_3.getWidth() - 1, DEFAULT_IMG_3.getHeight() - 1));
+        BufferedImage enemy1Img = new BufferedImage(40, 40, BufferedImage.TYPE_INT_ARGB);
+        BufferedImage enemy2Img = new BufferedImage(40, 40, BufferedImage.TYPE_INT_ARGB);
+        BufferedImage enemy3Img = new BufferedImage(40, 40, BufferedImage.TYPE_INT_ARGB);
+        try {
+            enemy1Img = ImageIO.read(ElixirSprite.class.getResourceAsStream("/enemies/enemy1.png"));
+            enemy2Img = ImageIO.read(ElixirSprite.class.getResourceAsStream("/enemies/enemy2.png"));
+            enemy3Img = ImageIO.read(ElixirSprite.class.getResourceAsStream("/enemies/enemy3.png"));
+        }
+        catch (IOException ex) { }
+        finally {
+            ENEMY_IMG_1 = enemy1Img;
+            ENEMY_IMG_2 = enemy2Img;
+            ENEMY_IMG_3 = enemy3Img;
+        }
     }
 
     int lives;
@@ -50,7 +52,7 @@ public class EnemySprite extends ShooterSprite {
     }
 
     public EnemySprite(GameView game, int lives) {
-        this(game, DEFAULT_IMG_1, lives);
+        this(game, ENEMY_IMG_1, lives);
     }
 
     public int getLives() {

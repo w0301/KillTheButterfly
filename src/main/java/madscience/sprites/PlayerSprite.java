@@ -15,21 +15,33 @@ public class PlayerSprite extends ShooterSprite {
     public static final SpriteView PLAYER_VIEW_1;
     public static final SpriteView PLAYER_VIEW_2;
     public static final SpriteView PLAYER_VIEW_3;
+    public static final SpriteView PLAYER_SHIELDED_VIEW_1;
+    public static final SpriteView PLAYER_SHIELDED_VIEW_2;
+    public static final SpriteView PLAYER_SHIELDED_VIEW_3;
 
     static {
         BufferedImage player1Img = new BufferedImage(40, 40, BufferedImage.TYPE_INT_ARGB);
         BufferedImage player2Img = new BufferedImage(40, 40, BufferedImage.TYPE_INT_ARGB);
         BufferedImage player3Img = new BufferedImage(40, 40, BufferedImage.TYPE_INT_ARGB);
+        BufferedImage playerShielded1Img = new BufferedImage(40, 40, BufferedImage.TYPE_INT_ARGB);
+        BufferedImage playerShielded2Img = new BufferedImage(40, 40, BufferedImage.TYPE_INT_ARGB);
+        BufferedImage playerShielded3Img = new BufferedImage(40, 40, BufferedImage.TYPE_INT_ARGB);
         try {
             player1Img = ImageIO.read(ElixirSprite.class.getResourceAsStream("/player/player1.png"));
             player2Img = ImageIO.read(ElixirSprite.class.getResourceAsStream("/player/player2.png"));
             player3Img = ImageIO.read(ElixirSprite.class.getResourceAsStream("/player/player3.png"));
+            playerShielded1Img = ImageIO.read(ElixirSprite.class.getResourceAsStream("/player/player_shielded1.png"));
+            playerShielded2Img = ImageIO.read(ElixirSprite.class.getResourceAsStream("/player/player_shielded2.png"));
+            playerShielded3Img = ImageIO.read(ElixirSprite.class.getResourceAsStream("/player/player_shielded3.png"));
         }
         catch (IOException ex) { }
         finally {
             PLAYER_VIEW_1 = new SpriteView(player1Img);
             PLAYER_VIEW_2 = new SpriteView(player2Img);
             PLAYER_VIEW_3 = new SpriteView(player3Img);
+            PLAYER_SHIELDED_VIEW_1 = new SpriteView(playerShielded1Img);
+            PLAYER_SHIELDED_VIEW_2 = new SpriteView(playerShielded2Img);
+            PLAYER_SHIELDED_VIEW_3 = new SpriteView(playerShielded3Img);
         }
     }
 
@@ -57,8 +69,9 @@ public class PlayerSprite extends ShooterSprite {
     }
 
     public void setShield(boolean val) {
-        game.refreshPlayerView();
+        boolean oldVal = shield;
         shield = val;
+        if (oldVal != val) game.refreshPlayerView();
     }
 
     public void addLife() {

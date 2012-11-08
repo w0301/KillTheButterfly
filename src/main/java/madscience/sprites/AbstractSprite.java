@@ -123,6 +123,11 @@ public abstract class AbstractSprite implements Cloneable {
         return currView.getHeight();
     }
 
+    public boolean contains(int pX, int pY) {
+        return pX >= getX() && pX <= getX() + getWidth() &&
+               pY >= getY() && pY <= getY() + getHeight();
+    }
+
     public boolean intersects(AbstractSprite sprite) {
         for (int i = 0; i < currView.rects.length; i++) {
             for (int j = 0; j < sprite.currView.rects.length; j++) {

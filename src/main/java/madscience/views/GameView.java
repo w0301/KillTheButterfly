@@ -236,15 +236,24 @@ public final class GameView extends CanvasView {
     }
 
     public void refreshPlayerView() {
-        playerSprite.setDefaultView(PlayerSprite.PLAYER_VIEW_1);
+        if (!playerSprite.hasShield()) playerSprite.setDefaultView(PlayerSprite.PLAYER_VIEW_1);
+        else playerSprite.setDefaultView(PlayerSprite.PLAYER_SHIELDED_VIEW_1);
+        playerSprite.clearAnimation();
         if (gameSpeed != 0) {
-            playerSprite.addAnimationView(PlayerSprite.PLAYER_VIEW_2);
-            playerSprite.addAnimationView(PlayerSprite.PLAYER_VIEW_1);
-            playerSprite.addAnimationView(PlayerSprite.PLAYER_VIEW_3);
-            playerSprite.addAnimationView(PlayerSprite.PLAYER_VIEW_1);
+            if (!playerSprite.hasShield()) {
+                playerSprite.addAnimationView(PlayerSprite.PLAYER_VIEW_2);
+                playerSprite.addAnimationView(PlayerSprite.PLAYER_VIEW_1);
+                playerSprite.addAnimationView(PlayerSprite.PLAYER_VIEW_3);
+                playerSprite.addAnimationView(PlayerSprite.PLAYER_VIEW_1);
+            }
+            else {
+                playerSprite.addAnimationView(PlayerSprite.PLAYER_SHIELDED_VIEW_2);
+                playerSprite.addAnimationView(PlayerSprite.PLAYER_SHIELDED_VIEW_1);
+                playerSprite.addAnimationView(PlayerSprite.PLAYER_SHIELDED_VIEW_3);
+                playerSprite.addAnimationView(PlayerSprite.PLAYER_SHIELDED_VIEW_1);
+            }
             playerSprite.runAnimation(playerAnimInterval);
         }
-        else playerSprite.clearAnimation();
     }
 
     public double getPlayerSetSpeed() {
@@ -365,6 +374,10 @@ public final class GameView extends CanvasView {
         nextSeqElixirAfterEnemies = seqElixirAfterEnemies;
     }
 
+    public List<SeqElixirSprite> getSeqElixirs() {
+        return seqElixirsToAdd;
+    }
+
     @Override
     public void update(double sec) {
         if (isPaused() || !isVisible()) return;
@@ -420,8 +433,8 @@ public final class GameView extends CanvasView {
 
                 if (sprite != null && sprite instanceof EnemySprite) {
                     EnemySprite enemy = (EnemySprite) sprite;
-                    int minY = (int) wallHeight - (int) enemy.getHeight();
-                    enemy.setXY(getWidth(), RAND.nextInt(getHeight() - 2*minY) + minY - 1);
+                    int minY = Math.max(0, (int) wallHeight - (int) enemy.getHeight());
+                    enemy.setXY(getWidth(), RAND.nextInt(getHeight() - (int) enemy.getHeight() - minY) + minY - 1);
                     enemy.setSpeedXY(-origGameSpeed, 0);
 
                     addSprite(enemy);
@@ -433,7 +446,7 @@ public final class GameView extends CanvasView {
         }
         else if (enemiesToGen == 0 && tillEnemyGen <= 0 && bossSprite != null && !bossAdded && lastEnemiesCount == 0 && lastElixirsCount == 0) {
             bossSprite.setXY(getWidth(), getHeight() - bossSprite.getHeight() - 1);
-            bossSprite.setOscillation(getHeight() - bossSprite.getHeight(), 10);
+            bossSprite.setOscillation(getHeight() - bossSprite.getHeight(), 15);
             bossSprite.setSpeedXY(-origGameSpeed, 0);
 
             addSprite(bossSprite);
@@ -457,8 +470,8 @@ public final class GameView extends CanvasView {
 
             if (sprite != null && sprite instanceof ElixirSprite) {
                 ElixirSprite elixir = (ElixirSprite) sprite;
-                int minY = Math.max((int) wallHeight, (int) elixir.getHeight());
-                elixir.setXY(getWidth(), RAND.nextInt(getHeight() - 2*minY) + minY - 1);
+                int minY = (int) wallHeight;
+                elixir.setXY(getWidth(), RAND.nextInt(getHeight() - (int) elixir.getHeight() - minY) + minY - 1);
                 elixir.setSpeedXY(-origGameSpeed, 0);
 
                 addSprite(elixir);

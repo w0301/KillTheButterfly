@@ -26,12 +26,19 @@ public class IndicatorView extends CanvasView {
     public void draw(Graphics2D g) {
         if (!isVisible()) return;
 
+        double borderPos = 3;
         g.setColor(Color.BLUE);
         g.fillRect(0, 0, getWidth(), getHeight());
 
         // life indicator for player
         double onePlayerLifeWidth = LIFE_INDICATOR_WIDTH / PlayerSprite.MAX_LIVES;
         int currPlayerLives = (game == null) ? 0 : game.getPlayerSprite().getLives();
+
+        g.setColor(Color.GREEN);
+        g.draw(new Rectangle2D.Double(LIFE_INDICATOR_MARGIN - borderPos, LIFE_INDICATOR_MARGIN - borderPos,
+                                      onePlayerLifeWidth * PlayerSprite.MAX_LIVES + 2*borderPos,
+                                      getHeight() - 2*LIFE_INDICATOR_MARGIN + 2*borderPos));
+
         g.setColor(Color.RED);
         g.fill(new Rectangle2D.Double(LIFE_INDICATOR_MARGIN, LIFE_INDICATOR_MARGIN,
                                       onePlayerLifeWidth * currPlayerLives,
@@ -43,6 +50,13 @@ public class IndicatorView extends CanvasView {
         double oneBossLifeWidth = LIFE_INDICATOR_WIDTH / bossMaxLives;
         int currBossLives = (game == null || game.getBossSprite() == null) ? 0 :
                                     game.getBossSprite().getLives();
+
+        g.setColor(Color.GREEN);
+        g.draw(new Rectangle2D.Double(getWidth() - oneBossLifeWidth * bossMaxLives - LIFE_INDICATOR_MARGIN - borderPos,
+                                      LIFE_INDICATOR_MARGIN - borderPos,
+                                      oneBossLifeWidth * bossMaxLives + 2*borderPos,
+                                      getHeight() - 2*LIFE_INDICATOR_MARGIN + 2*borderPos));
+
         g.setColor(Color.RED);
         g.fill(new Rectangle2D.Double(getWidth() - oneBossLifeWidth * currBossLives - LIFE_INDICATOR_MARGIN,
                                       LIFE_INDICATOR_MARGIN,

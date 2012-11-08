@@ -22,17 +22,17 @@ public class GameFactory {
         /// enemies
         newGame.setEnemyGeneration(10 + 10 * level, 2000, 1, 1);
 
-        EnemySprite enemy1 = new EnemySprite(newGame, EnemySprite.DEFAULT_IMG_1, 1);
+        EnemySprite enemy1 = new EnemySprite(newGame, EnemySprite.ENEMY_IMG_1, 1);
         enemy1.addGun(new ShooterSprite.Gun(0, enemy1.getHeight() / 2, -100, 0, BulletSprite.ENEMY_BULLET_IMG));
         enemy1.setShootingInterval(5000);
         enemy1.setShooting(true);
 
-        EnemySprite enemy2 = new EnemySprite(newGame, EnemySprite.DEFAULT_IMG_2, 2);
+        EnemySprite enemy2 = new EnemySprite(newGame, EnemySprite.ENEMY_IMG_2, 2);
         enemy2.addGun(new ShooterSprite.Gun(0, enemy2.getHeight() / 2, -130, 0, BulletSprite.ENEMY_BULLET_IMG));
         enemy2.setShootingInterval(4000);
         enemy2.setShooting(true);
 
-        EnemySprite enemy3 = new EnemySprite(newGame, EnemySprite.DEFAULT_IMG_3, 3);
+        EnemySprite enemy3 = new EnemySprite(newGame, EnemySprite.ENEMY_IMG_3, 3);
         enemy3.addGun(new ShooterSprite.Gun(0, enemy3.getHeight() / 4, -130, 0, BulletSprite.ENEMY_BULLET_IMG));
         enemy3.addGun(new ShooterSprite.Gun(0, enemy3.getHeight() / 4 + enemy3.getHeight() / 2, -130, 0, BulletSprite.ENEMY_BULLET_IMG));
         enemy3.setShootingInterval(3500);
@@ -84,7 +84,7 @@ public class GameFactory {
         });
 
         /// elixirs for sequence
-        newGame.createSeqElixirs(level + 3);
+        newGame.createSeqElixirs(level + 9); // level + 3
 
         return newGame;
     }

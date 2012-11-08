@@ -11,7 +11,6 @@ import java.awt.event.KeyListener;
 import java.awt.event.MouseEvent;
 import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferStrategy;
-import java.io.InputStream;
 import java.net.URL;
 import java.util.HashSet;
 import java.util.Map;
@@ -28,12 +27,14 @@ import madscience.views.GameView;
 import madscience.views.GameViewListener;
 import madscience.views.IndicatorView;
 import madscience.views.MenuView;
+import madscience.views.SeqChooserListener;
+import madscience.views.SeqChooserView;
 
 /**
  *
  * @author Richard Kakaš
  */
-public final class GameCanvas extends Canvas implements Runnable, ComponentListener, KeyListener, MouseInputListener, GameViewListener {
+public final class GameCanvas extends Canvas implements Runnable, ComponentListener, KeyListener, MouseInputListener, GameViewListener, SeqChooserListener {
     private static final int INDICATOR_HEIGHT = 25;
     private static final Runnable BACKGROUND_SOUND;
 
@@ -75,6 +76,7 @@ public final class GameCanvas extends Canvas implements Runnable, ComponentListe
     private static final int NEW_GAME_MENU_VIEW_ID = 3;
     private static final int LEVEL_CLEARED_MENU_VIEW_ID = 4;
     private static final int GAME_LOST_MENU_VIEW_ID = 5;
+    private static final int SEQUENCE_CHOOSER_VIEW_ID = 6;
 
     private BufferStrategy buffer;
 
@@ -96,6 +98,8 @@ public final class GameCanvas extends Canvas implements Runnable, ComponentListe
         setIgnoreRepaint(true);
         addComponentListener(this);
         addKeyListener(this);
+        addMouseListener(this);
+        addMouseMotionListener(this);
     }
 
     public CanvasView putView(Integer id, CanvasView view) {
@@ -233,19 +237,32 @@ public final class GameCanvas extends Canvas implements Runnable, ComponentListe
         }
     }
 
+    @Override
+    public void seqChooserEnded(SeqChooserView sender, boolean won) {
+        sender.setVisible(false);
+
+        CanvasView toView;
+        if (won) toView = getView(LEVEL_CLEARED_MENU_VIEW_ID);
+        else toView = getView(GAME_LOST_MENU_VIEW_ID);
+        if (toView != null) toView.setVisible(true);
+    }
 
     @Override
-    public void gameEnded(GameView game, boolean won) {
-        if (game != null) {
-            game.setVisible(false);
-            getView(INDICATOR_VIEW_ID).setVisible(false);
+    public void gameEnded(GameView sender, boolean won) {
+        sender.setVisible(false);
+        CanvasView indicator = getView(INDICATOR_VIEW_ID);
+        if (indicator != null) indicator.setVisible(false);
+
+        CanvasView toView;
+        if (won) {
+            toView = getView(SEQUENCE_CHOOSER_VIEW_ID);
+            if (toView != null) {
+                ((SeqChooserView) toView).reset(sender.getSeqElixirs());
+            }
         }
-        CanvasView menu;
-        if (won) menu = getView(LEVEL_CLEARED_MENU_VIEW_ID);
-        else menu = getView(GAME_LOST_MENU_VIEW_ID);
-        if (menu != null) {
-            menu.setVisible(true);
-        }
+        else toView = getView(GAME_LOST_MENU_VIEW_ID);
+        if (toView != null) toView.setVisible(true);
+
         stopBackgroundSound();
     }
 
@@ -323,7 +340,11 @@ public final class GameCanvas extends Canvas implements Runnable, ComponentListe
         });
         putView(GAME_LOST_MENU_VIEW_ID, gameLostMenu);
 
+        SeqChooserView seqChooser = new SeqChooserView(getWidth(), getHeight());
+        seqChooser.addSeqListener(this);
+        putView(SEQUENCE_CHOOSER_VIEW_ID, seqChooser);
 
+        //seqChooser.setVisible(true);
         mainMenu.setVisible(true);
 
         createBufferStrategy(2);
