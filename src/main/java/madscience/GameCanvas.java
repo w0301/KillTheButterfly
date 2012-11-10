@@ -35,6 +35,7 @@ import madscience.views.SeqChooserView;
  * @author Richard Kakaš
  */
 public final class GameCanvas extends Canvas implements Runnable, ComponentListener, KeyListener, MouseInputListener, GameViewListener, SeqChooserListener {
+    public static final int MAX_LEVEL = 7;
     private static final int INDICATOR_HEIGHT = 25;
     private static final Runnable BACKGROUND_SOUND;
 
@@ -77,6 +78,8 @@ public final class GameCanvas extends Canvas implements Runnable, ComponentListe
     private static final int LEVEL_CLEARED_MENU_VIEW_ID = 4;
     private static final int GAME_LOST_MENU_VIEW_ID = 5;
     private static final int SEQUENCE_CHOOSER_VIEW_ID = 6;
+    private static final int CHOOSER_LOST_MENU_VIEW_ID = 7;
+    private static final int GAME_WON_MENU_VIEW_ID = 8;
 
     private BufferStrategy buffer;
 
@@ -92,6 +95,7 @@ public final class GameCanvas extends Canvas implements Runnable, ComponentListe
     private GameView game = null;
 
     private int nextGameLevel = 1;
+    private int lastPlayerScore = 0 ;
 
     public GameCanvas() {
         setVisible(false);
@@ -138,10 +142,24 @@ public final class GameCanvas extends Canvas implements Runnable, ComponentListe
     public void startNextGame(boolean reset) {
         synchronized (loopLock) {
             int score = 0;
-            if (game == null || reset) nextGameLevel = 1;
-            else score = game.getPlayerScore();
+            if (game == null || reset) {
+                nextGameLevel = 1;
+                lastPlayerScore = 0;
+            }
+            else {
+                score = game.getPlayerScore();
+                lastPlayerScore = score;
+            }
             GameView newGame = GameFactory.createGame(getGameWidth(), getGameHeight(), nextGameLevel++);
             newGame.addPlayerScore(score);
+            startGame(newGame);
+        }
+    }
+
+    public void resetCurrentGame() {
+        synchronized (loopLock) {
+            GameView newGame = GameFactory.createGame(getGameWidth(), getGameHeight(), nextGameLevel);
+            newGame.addPlayerScore(lastPlayerScore);
             startGame(newGame);
         }
     }
@@ -242,8 +260,11 @@ public final class GameCanvas extends Canvas implements Runnable, ComponentListe
         sender.setVisible(false);
 
         CanvasView toView;
-        if (won) toView = getView(LEVEL_CLEARED_MENU_VIEW_ID);
-        else toView = getView(GAME_LOST_MENU_VIEW_ID);
+        if (won) {
+            if (nextGameLevel > MAX_LEVEL) toView = getView(GAME_WON_MENU_VIEW_ID);
+            else toView = getView(LEVEL_CLEARED_MENU_VIEW_ID);
+        }
+        else toView = getView(CHOOSER_LOST_MENU_VIEW_ID);
         if (toView != null) toView.setVisible(true);
     }
 
@@ -340,6 +361,38 @@ public final class GameCanvas extends Canvas implements Runnable, ComponentListe
         });
         putView(GAME_LOST_MENU_VIEW_ID, gameLostMenu);
 
+        MenuView chooserLostMenu = new MenuView(getWidth(), getHeight(), "Bad sequence");
+        chooserLostMenu.addItem("Retry game", new MenuView.Action() {
+            @Override
+            public void doAction(MenuView sender) {
+                resetCurrentGame();
+                sender.setVisible(false);
+            }
+        });
+        chooserLostMenu.addItem("Exit", new MenuView.Action() {
+            @Override
+            public void doAction(MenuView sender) {
+                System.exit(0);
+            }
+        });
+        putView(CHOOSER_LOST_MENU_VIEW_ID, chooserLostMenu);
+
+        MenuView gameWonMenu = new MenuView(getWidth(), getHeight(), "Game won");
+        gameWonMenu.addItem("New game", new MenuView.Action() {
+            @Override
+            public void doAction(MenuView sender) {
+                startNextGame(true);
+                sender.setVisible(false);
+            }
+        });
+        gameWonMenu.addItem("Exit", new MenuView.Action() {
+            @Override
+            public void doAction(MenuView sender) {
+                System.exit(0);
+            }
+        });
+        putView(GAME_WON_MENU_VIEW_ID, gameWonMenu);
+
         SeqChooserView seqChooser = new SeqChooserView(getWidth(), getHeight());
         seqChooser.addSeqListener(this);
         putView(SEQUENCE_CHOOSER_VIEW_ID, seqChooser);
@@ -417,6 +470,7 @@ public final class GameCanvas extends Canvas implements Runnable, ComponentListe
 
     @Override
     public void mouseDragged(MouseEvent me) {
+        mouseMoved(me);
     }
 
     @Override

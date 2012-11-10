@@ -1,19 +1,18 @@
 package madscience;
 
-import madscience.views.GameView;
 import java.util.Random;
 import madscience.sprites.BossSprite;
 import madscience.sprites.BulletSprite;
 import madscience.sprites.ElixirSprite;
 import madscience.sprites.EnemySprite;
 import madscience.sprites.ShooterSprite;
+import madscience.views.GameView;
 
 /**
  *
  * @author Richard Kakaš
  */
 public class GameFactory {
-
     private static final Random RAND = new Random();
 
     public static GameView createGame(int width, int height, int level) {
@@ -80,11 +79,12 @@ public class GameFactory {
             @Override
             public void performElixirShooted() {
                 game.removeSprite(this);
+                playShieldShootedSound();
             }
         });
 
         /// elixirs for sequence
-        newGame.createSeqElixirs(level + 9); // level + 3
+        newGame.createSeqElixirs(4 + ((level - 1) / 2));
 
         return newGame;
     }

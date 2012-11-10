@@ -21,10 +21,10 @@ public class SeqElixirSprite extends ElixirSprite implements Comparable<SeqElixi
         BufferedImage greenImg = new BufferedImage(75, 75, BufferedImage.TYPE_INT_ARGB);
         BufferedImage yellowImg = new BufferedImage(75, 75, BufferedImage.TYPE_INT_ARGB);
         try {
-            redImg = ImageIO.read(ElixirSprite.class.getResourceAsStream("/seq_elixirs/red.png"));
-            blueImg = ImageIO.read(ElixirSprite.class.getResourceAsStream("/seq_elixirs/blue.png"));
-            greenImg = ImageIO.read(ElixirSprite.class.getResourceAsStream("/seq_elixirs/green.png"));
-            yellowImg = ImageIO.read(ElixirSprite.class.getResourceAsStream("/seq_elixirs/yellow.png"));
+            redImg = ImageIO.read(SeqElixirSprite.class.getResourceAsStream("/seq_elixirs/red.png"));
+            blueImg = ImageIO.read(SeqElixirSprite.class.getResourceAsStream("/seq_elixirs/blue.png"));
+            greenImg = ImageIO.read(SeqElixirSprite.class.getResourceAsStream("/seq_elixirs/green.png"));
+            yellowImg = ImageIO.read(SeqElixirSprite.class.getResourceAsStream("/seq_elixirs/yellow.png"));
         }
         catch (IOException e) { }
         finally {
@@ -65,7 +65,7 @@ public class SeqElixirSprite extends ElixirSprite implements Comparable<SeqElixi
 
     @Override
     public void performElixirShooted() {
-    }    
+    }
 
     @Override
     public int compareTo(SeqElixirSprite t) {

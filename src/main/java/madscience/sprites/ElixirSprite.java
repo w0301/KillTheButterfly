@@ -2,8 +2,13 @@ package madscience.sprites;
 
 import java.awt.image.BufferedImage;
 import java.io.IOException;
+import java.net.URL;
 import java.util.EnumSet;
 import javax.imageio.ImageIO;
+import javax.sound.sampled.AudioSystem;
+import javax.sound.sampled.Clip;
+import javax.sound.sampled.LineUnavailableException;
+import javax.sound.sampled.UnsupportedAudioFileException;
 import madscience.views.GameView;
 
 /**
@@ -15,6 +20,8 @@ public abstract class ElixirSprite extends MovableSprite {
     public static final BufferedImage SHIELD_IMG;
     public static final BufferedImage SLOWDOWN_IMG;
     public static final BufferedImage FASTFORWARD_IMG;
+    private static final URL ELIXIR_SHOOTED_SOUND;
+    private static final URL SHIELD_SHOOTED_SOUND;
 
     static {
         BufferedImage lifeImg = new BufferedImage(40, 40, BufferedImage.TYPE_INT_ARGB);
@@ -34,6 +41,31 @@ public abstract class ElixirSprite extends MovableSprite {
             SLOWDOWN_IMG = slowdownImg;
             FASTFORWARD_IMG = fastforwardImg;
         }
+
+        ELIXIR_SHOOTED_SOUND = EnemySprite.class.getResource("/sounds/glass_break.wav");
+        SHIELD_SHOOTED_SOUND = EnemySprite.class.getResource("/sounds/shield_shot.wav");
+    }
+
+    protected void playElixirShootedSound() {
+        try {
+            Clip clip = AudioSystem.getClip();
+            clip.open(AudioSystem.getAudioInputStream(ELIXIR_SHOOTED_SOUND));
+            clip.start();
+        }
+        catch (LineUnavailableException e) { }
+        catch (UnsupportedAudioFileException e) { }
+        catch (IOException e) { }
+    }
+
+    protected void playShieldShootedSound() {
+        try {
+            Clip clip = AudioSystem.getClip();
+            clip.open(AudioSystem.getAudioInputStream(SHIELD_SHOOTED_SOUND));
+            clip.start();
+        }
+        catch (LineUnavailableException e) { }
+        catch (UnsupportedAudioFileException e) { }
+        catch (IOException e) { }
     }
 
     public ElixirSprite(GameView game, SpriteView view) {
@@ -81,6 +113,7 @@ public abstract class ElixirSprite extends MovableSprite {
         toAdd.setSpeedXY(speedX, speedY);
         game.addSprite(toAdd);
         game.removeSprite(this);
+        playElixirShootedSound();
     }
 
 }

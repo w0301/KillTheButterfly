@@ -63,7 +63,6 @@ public final class GameView extends CanvasView {
 
     private Set<GameViewListener> gameListeners = new HashSet<GameViewListener>();
 
-    private BufferedImage backgroundImg;
     private double backgroundOffset = 0;
     private double wallHeight = 100;
 
@@ -153,17 +152,18 @@ public final class GameView extends CanvasView {
         // background
         int bgXCount = (int) (((double) getWidth()) / ((double) BACKGROUND_BLOCK_IMG.getWidth()) + 1.5);
         int bgYCount = (int) (((double) getHeight()) / ((double) BACKGROUND_BLOCK_IMG.getHeight()) + 0.5);
-        backgroundImg = new BufferedImage(BACKGROUND_BLOCK_IMG.getWidth() * bgXCount,
-                                          BACKGROUND_BLOCK_IMG.getHeight() * bgYCount, BufferedImage.TYPE_INT_ARGB);
-        Graphics2D g = backgroundImg.createGraphics();
-        g.setColor(new Color(200, 200, 200));
-        g.fill(new Rectangle2D.Double(0, 0, backgroundImg.getWidth(), wallHeight));
+        BufferedImage bgImg = new BufferedImage(BACKGROUND_BLOCK_IMG.getWidth() * bgXCount,
+                                                BACKGROUND_BLOCK_IMG.getHeight() * bgYCount, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g = bgImg.createGraphics();
+        g.setColor(new Color(200, 200, 225));
+        g.fill(new Rectangle2D.Double(0, 0, bgImg.getWidth(), wallHeight));
         for (int y = 0; y < bgYCount; y++) {
             for (int x = 0; x < bgXCount; x++) {
                 g.drawImage(BACKGROUND_BLOCK_IMG, null, x * BACKGROUND_BLOCK_IMG.getWidth(),
                                                         (int) wallHeight + y * BACKGROUND_BLOCK_IMG.getHeight());
             }
         }
+        setBackground(bgImg);
 
         // sprites logics
         playerSprite = new PlayerSprite(this);
@@ -501,7 +501,7 @@ public final class GameView extends CanvasView {
         // drawing background
         AffineTransform bgAf = new AffineTransform();
         bgAf.translate(backgroundOffset, 0);
-        g.drawImage(backgroundImg, bgAf, null);
+        g.drawImage(getBackground(), bgAf, null);
 
         // drawing sprite
         for (AbstractSprite sprite : sprites) sprite.draw(g);

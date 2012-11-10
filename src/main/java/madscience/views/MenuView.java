@@ -42,7 +42,6 @@ public class MenuView extends CanvasView {
 
     private String title = null;
     private List<Item> items = new ArrayList<Item>();
-    private BufferedImage backgroundImg = null;
 
     private int currentItem = 0;
     private boolean canDoAction = true;
@@ -115,14 +114,6 @@ public class MenuView extends CanvasView {
         }
     }
 
-    public BufferedImage getBackground() {
-        return backgroundImg;
-    }
-
-    public void setBackground(BufferedImage backgroundImg) {
-        this.backgroundImg = backgroundImg;
-    }
-
     @Override
     public void setVisible(boolean val) {
         if (isVisible() != val) currentItem = 0;
@@ -131,10 +122,9 @@ public class MenuView extends CanvasView {
 
     @Override
     public void draw(Graphics2D g) {
-        if (!isVisible()) return;
+        super.draw(g);
 
-        if (backgroundImg != null) g.drawImage(backgroundImg, null, 0, 0);
-        else g.clearRect(0, 0, getWidth(), getHeight());
+        if (!isVisible()) return;
 
         Rectangle2D titleBounds = TITLE_FONT.getStringBounds(title, g.getFontRenderContext());
 

@@ -20,13 +20,17 @@ public class BossSprite extends EnemySprite {
     static {
         BufferedImage bossImg = new BufferedImage(70, 100, BufferedImage.TYPE_INT_ARGB);
         try {
-            bossImg = ImageIO.read(ElixirSprite.class.getResourceAsStream("/enemies/boss.png"));
+            bossImg = ImageIO.read(BossSprite.class.getResourceAsStream("/enemies/boss.png"));
         }
         catch (IOException ex) { }
         finally {
             DEFAULT_VIEW = new SpriteView(bossImg, new Rectangle2D[] { new Rectangle2D.Double(20, 0, bossImg.getWidth() - 20, bossImg.getHeight()),
                                                                        new Rectangle2D.Double(0, 47, 20, 110) });
         }
+    }
+
+    @Override
+    protected void playShootedSound() {
     }
 
     public BossSprite(GameView game, SpriteView image, int lives) {

@@ -1,6 +1,7 @@
 package madscience.views;
 
 import java.awt.Color;
+import java.awt.Font;
 import java.awt.Graphics2D;
 import java.awt.event.MouseEvent;
 import java.awt.geom.Rectangle2D;
@@ -15,6 +16,8 @@ import madscience.sprites.SeqElixirSprite;
  * @author Richard Kakaš
  */
 public class SeqChooserView extends CanvasView {
+    private static final Font TEXT_FONT = new Font(Font.SANS_SERIF, Font.PLAIN, 25);
+    private static final Color TEXT_COLOR = Color.GREEN;
     private static final int MAX_BAD_TRIES = 3;
     private static final double SPRITES_MARGIN = 20;
 
@@ -93,9 +96,15 @@ public class SeqChooserView extends CanvasView {
 
     @Override
     public void draw(Graphics2D g) {
+        super.draw(g);
+
         if (!isVisible()) return;
 
         g.clearRect(0, 0, getWidth(), getHeight());
+
+        g.setFont(TEXT_FONT);
+        g.setColor(TEXT_COLOR);
+
 
         g.drawString("Bad tries left: " + badTriesLeft, 10, 40);
 
@@ -106,7 +115,8 @@ public class SeqChooserView extends CanvasView {
         int i = 0;
         for (SeqElixirSprite sprite : seqSpritesToView) {
             if (hoverIndex == i) {
-                g.setColor(Color.RED);
+                if (clickIndex == hoverIndex) g.setColor(Color.RED);
+                else g.setColor(Color.YELLOW);
                 g.draw(new Rectangle2D.Double(sprite.getX(), sprite.getY(), sprite.getWidth(), sprite.getHeight()));
             }
             sprite.draw(g);

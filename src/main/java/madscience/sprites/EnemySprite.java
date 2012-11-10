@@ -1,12 +1,16 @@
 package madscience.sprites;
 
-import java.awt.Color;
-import java.awt.Graphics2D;
-import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
+import java.net.URL;
 import java.util.EnumSet;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.imageio.ImageIO;
+import javax.sound.sampled.AudioSystem;
+import javax.sound.sampled.Clip;
+import javax.sound.sampled.LineUnavailableException;
+import javax.sound.sampled.UnsupportedAudioFileException;
 import madscience.views.GameView;
 
 /**
@@ -17,15 +21,17 @@ public class EnemySprite extends ShooterSprite {
     public static final BufferedImage ENEMY_IMG_1;
     public static final BufferedImage ENEMY_IMG_2;
     public static final BufferedImage ENEMY_IMG_3;
+    private static final URL SHOOTED_SOUND;
+    private static final URL DEAD_SOUND;
 
     static {
         BufferedImage enemy1Img = new BufferedImage(40, 40, BufferedImage.TYPE_INT_ARGB);
         BufferedImage enemy2Img = new BufferedImage(40, 40, BufferedImage.TYPE_INT_ARGB);
         BufferedImage enemy3Img = new BufferedImage(40, 40, BufferedImage.TYPE_INT_ARGB);
         try {
-            enemy1Img = ImageIO.read(ElixirSprite.class.getResourceAsStream("/enemies/enemy1.png"));
-            enemy2Img = ImageIO.read(ElixirSprite.class.getResourceAsStream("/enemies/enemy2.png"));
-            enemy3Img = ImageIO.read(ElixirSprite.class.getResourceAsStream("/enemies/enemy3.png"));
+            enemy1Img = ImageIO.read(EnemySprite.class.getResourceAsStream("/enemies/enemy1.png"));
+            enemy2Img = ImageIO.read(EnemySprite.class.getResourceAsStream("/enemies/enemy2.png"));
+            enemy3Img = ImageIO.read(EnemySprite.class.getResourceAsStream("/enemies/enemy3.png"));
         }
         catch (IOException ex) { }
         finally {
@@ -33,6 +39,9 @@ public class EnemySprite extends ShooterSprite {
             ENEMY_IMG_2 = enemy2Img;
             ENEMY_IMG_3 = enemy3Img;
         }
+
+        SHOOTED_SOUND = EnemySprite.class.getResource("/sounds/enemy_shot.wav");
+        DEAD_SOUND = EnemySprite.class.getResource("/sounds/enemy_dead.wav");
     }
 
     int lives;
@@ -41,6 +50,28 @@ public class EnemySprite extends ShooterSprite {
     double oscillationTime = 0;
     double oscillationAmpl = 30;
     double oscillationPeriod = 2;
+
+    protected void playShootedSound() {
+        try {
+            Clip clip = AudioSystem.getClip();
+            clip.open(AudioSystem.getAudioInputStream(SHOOTED_SOUND));
+            clip.start();
+        }
+        catch (LineUnavailableException e) { }
+        catch (UnsupportedAudioFileException e) { }
+        catch (IOException e) { }
+    }
+
+    protected void playDeadSound() {
+        try {
+            Clip clip = AudioSystem.getClip();
+            clip.open(AudioSystem.getAudioInputStream(DEAD_SOUND));
+            clip.start();
+        }
+        catch (LineUnavailableException e) { }
+        catch (UnsupportedAudioFileException e) { }
+        catch (IOException e) { }
+    }
 
     public EnemySprite(GameView game, SpriteView view, int lives) {
         super(game, view);
@@ -130,12 +161,18 @@ public class EnemySprite extends ShooterSprite {
 
     @Override
     public void performIntersection(AbstractSprite sprite) {
-        if (sprite instanceof BulletSprite && ((BulletSprite) sprite).getOwner() == game.getPlayerSprite())
+        boolean lifeRemoved = false;
+        if (sprite instanceof BulletSprite && ((BulletSprite) sprite).getOwner() == game.getPlayerSprite()) {
             lives--;
+            lifeRemoved = true;
+        }
+
         if (lives <= 0 || sprite instanceof PlayerSprite) {
             game.removeSprite(this);
             game.addPlayerScore(startLives * 5);
+            playDeadSound();
         }
+        else if (lifeRemoved) playShootedSound();
     }
 
 }

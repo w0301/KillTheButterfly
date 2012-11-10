@@ -27,8 +27,8 @@ public class BulletSprite extends MovableSprite {
         BufferedImage playerBulletImg = DEFAULT_IMG;
         BufferedImage enemyBulletImg = DEFAULT_IMG;
         try {
-            playerBulletImg = ImageIO.read(ElixirSprite.class.getResourceAsStream("/bullets/player_bullet.png"));
-            enemyBulletImg = ImageIO.read(ElixirSprite.class.getResourceAsStream("/bullets/enemy_bullet.png"));
+            playerBulletImg = ImageIO.read(BulletSprite.class.getResourceAsStream("/bullets/player_bullet.png"));
+            enemyBulletImg = ImageIO.read(BulletSprite.class.getResourceAsStream("/bullets/enemy_bullet.png"));
         }
         catch (IOException ex) { }
         finally {

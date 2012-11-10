@@ -74,6 +74,8 @@ public class SlideshowView extends CanvasView {
 
     @Override
     public void draw(Graphics2D g) {
+        super.draw(g);
+
         if (!isVisible() || currentPage >= pages.size()) return;
 
         if (pages.get(currentPage).image != null)

@@ -1,6 +1,7 @@
 package madscience.views;
 
 import java.awt.Graphics2D;
+import java.awt.image.BufferedImage;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -13,6 +14,7 @@ public abstract class CanvasView {
     private final int width, height;
     private boolean visible = false;
     private Set<CanvasViewListener> viewListeners = new HashSet<CanvasViewListener>();
+    private BufferedImage backgroundImg = null;
 
     public CanvasView(int width, int height) {
         this.width = width;
@@ -70,7 +72,19 @@ public abstract class CanvasView {
         viewListeners.remove(l);
     }
 
-    public abstract void draw(Graphics2D g);
+    public BufferedImage getBackground() {
+        return backgroundImg;
+    }
+
+    public void setBackground(BufferedImage backgroundImg) {
+        this.backgroundImg = backgroundImg;
+    }
+
+    public void draw(Graphics2D g) {
+        if (!isVisible()) return;
+        if (backgroundImg != null) g.drawImage(backgroundImg, null, 0, 0);
+        else g.clearRect(0, 0, getWidth(), getHeight());
+    }
 
     public void update(double sec) {
     }

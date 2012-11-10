@@ -15,7 +15,7 @@ public class HoleSprite extends ElixirSprite {
     static {
         BufferedImage img = new BufferedImage(40, 40, BufferedImage.TYPE_INT_ARGB);
         try {
-            img = ImageIO.read(ElixirSprite.class.getResourceAsStream("/elixirs/hole.png"));
+            img = ImageIO.read(HoleSprite.class.getResourceAsStream("/elixirs/hole.png"));
         }
         catch (IOException ex) { }
         finally {
