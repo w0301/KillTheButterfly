@@ -122,10 +122,10 @@ public class PlayerSprite extends ShooterSprite {
     @Override
     public void performIntersection(AbstractSprite sprite) {
         if ( (sprite instanceof BulletSprite && ((BulletSprite) sprite).getOwner() != this) ||
-             (sprite instanceof EnemySprite) ) {
+             (sprite instanceof EnemySprite) || (sprite instanceof HoleSprite) ) {
             if (hasShield()) setShield(false);
             else removeLife();
-            if (!(sprite instanceof HoleSprite)) playShootedSound();
+            playShootedSound();
         }
     }
 

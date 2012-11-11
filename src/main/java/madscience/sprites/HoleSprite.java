@@ -38,7 +38,6 @@ public class HoleSprite extends ElixirSprite {
 
     @Override
     public void performElixir() {
-        game.getPlayerSprite().removeLife();
     }
 
     @Override
