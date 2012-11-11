@@ -51,7 +51,7 @@ public class GameFactory {
         newGame.setBossSprite(newBoss);
 
         /// adding elixirs
-        newGame.setElixirGeneration(5000);
+        newGame.setElixirGeneration(9000);
         newGame.addPossibleElixir(0.25, new ElixirSprite(newGame, ElixirSprite.LIFE_IMG) {
             @Override
             public void performElixir() {

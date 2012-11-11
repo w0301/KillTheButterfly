@@ -29,6 +29,8 @@ import madscience.views.IndicatorView;
 import madscience.views.MenuView;
 import madscience.views.SeqChooserListener;
 import madscience.views.SeqChooserView;
+import madscience.views.SlideshowListener;
+import madscience.views.SlideshowView;
 
 /**
  *
@@ -41,6 +43,7 @@ public final class GameCanvas extends Canvas implements Runnable, ComponentListe
 
     private static Thread backgroundSoundThread = null;
     private static boolean backgroundSoundRunning = false;
+    private static boolean backgroundSoundPaused = false;
 
     static {
         BACKGROUND_SOUND = new Runnable() {
@@ -59,6 +62,7 @@ public final class GameCanvas extends Canvas implements Runnable, ComponentListe
                         sourceDataLine.start();
 
                         while (backgroundSoundRunning) {
+                            while (backgroundSoundPaused) Thread.sleep(1);
                             int read = audioInputStream.read(buffer, 0, buffer.length);
                             if (read > 0) sourceDataLine.write(buffer, 0, read);
                             else break;
@@ -81,6 +85,8 @@ public final class GameCanvas extends Canvas implements Runnable, ComponentListe
     private static final int CHOOSER_LOST_MENU_VIEW_ID = 7;
     private static final int GAME_WON_MENU_VIEW_ID = 8;
     private static final int HIGHSCORE_TABLE_VIEW_ID = 9;
+    private static final int GAME_PAUSED_MENU_VIEW_ID = 10;
+    private static final int SLIDESHOW_VIEW_ID = 11;
 
     private BufferStrategy buffer;
 
@@ -96,7 +102,7 @@ public final class GameCanvas extends Canvas implements Runnable, ComponentListe
     private GameView game = null;
 
     private int nextGameLevel = 1;
-    private int lastPlayerScore = 0 ;
+    private int lastPlayerScore = 0;
 
     public GameCanvas() {
         setVisible(false);
@@ -136,7 +142,6 @@ public final class GameCanvas extends Canvas implements Runnable, ComponentListe
             indicator.setXY(0, 0);
 
             game.setXY(0, indicator.getHeight());
-            startBackgroundSound();
         }
     }
 
@@ -162,13 +167,6 @@ public final class GameCanvas extends Canvas implements Runnable, ComponentListe
             GameView newGame = GameFactory.createGame(getGameWidth(), getGameHeight(), nextGameLevel);
             newGame.addPlayerScore(lastPlayerScore);
             startGame(newGame);
-        }
-    }
-
-    public void pauseGame(boolean val) {
-        synchronized (loopLock) {
-            game.setPaused(val);
-            stopBackgroundSound();
         }
     }
 
@@ -208,6 +206,10 @@ public final class GameCanvas extends Canvas implements Runnable, ComponentListe
             backgroundSoundThread = new Thread(BACKGROUND_SOUND);
             backgroundSoundThread.start();
         }
+    }
+
+    public static void setBackgroundSoundPaused(boolean val) {
+        backgroundSoundPaused = val;
     }
 
     public static void stopBackgroundSound() {
@@ -263,7 +265,12 @@ public final class GameCanvas extends Canvas implements Runnable, ComponentListe
         CanvasView toView;
         if (won) {
             if (nextGameLevel > MAX_LEVEL) toView = getView(GAME_WON_MENU_VIEW_ID);
-            else toView = getView(LEVEL_CLEARED_MENU_VIEW_ID);
+            else {
+                toView = getView(LEVEL_CLEARED_MENU_VIEW_ID);
+                if (toView != null && toView instanceof MenuView) {
+                    ((MenuView) toView).setTitle("Level " + (nextGameLevel - 1) + " cleared");
+                }
+            }
         }
         else toView = getView(CHOOSER_LOST_MENU_VIEW_ID);
         if (toView != null) toView.setVisible(true);
@@ -278,24 +285,30 @@ public final class GameCanvas extends Canvas implements Runnable, ComponentListe
         CanvasView toView;
         if (won) {
             toView = getView(SEQUENCE_CHOOSER_VIEW_ID);
-            if (toView != null) {
+            if (toView != null && toView instanceof SeqChooserView) {
                 ((SeqChooserView) toView).reset(sender.getSeqElixirs());
             }
         }
         else toView = getView(GAME_LOST_MENU_VIEW_ID);
         if (toView != null) toView.setVisible(true);
-
-        stopBackgroundSound();
     }
 
     @Override
-    public void gamePaused(GameView game) {
+    public void gamePaused(GameView sender) {
+        sender.setVisible(false);
+        CanvasView toView = getView(GAME_PAUSED_MENU_VIEW_ID);
+        if (toView != null && toView instanceof MenuView) {
+            ((MenuView) toView).setTitle("Paused - Level " + (nextGameLevel - 1));
+            toView.setVisible(true);
+        }
     }
 
     @Override
-    public void gameUnpaused(GameView game) {
+    public void gameUnpaused(GameView sender) {
+        CanvasView toHide = getView(GAME_PAUSED_MENU_VIEW_ID);
+        if (toHide != null) toHide.setVisible(false);
+        sender.setVisible(true);
     }
-
 
     @Override
     public void componentResized(ComponentEvent ce) {
@@ -307,16 +320,30 @@ public final class GameCanvas extends Canvas implements Runnable, ComponentListe
 
     @Override
     public void componentShown(ComponentEvent ce) {
-        final MenuView mainMenu = new MenuView(getWidth(), getHeight(), "Main menu");
-        final MenuView highScoreMenu = new MenuView(getWidth(), getHeight(), "High scores");
+        startBackgroundSound();
 
-        mainMenu.addItem("New game", new MenuView.Action() {
+        final MenuView.Action newGameAction = new MenuView.Action() {
             @Override
             public void doAction(MenuView sender) {
-                startNextGame(true);
                 sender.setVisible(false);
+                startNextGame(true);
+            }
+        };
+
+        final MenuView mainMenu = new MenuView(getWidth(), getHeight(), "Main menu");
+        final MenuView highScoreMenu = new MenuView(getWidth(), getHeight(), "High scores");
+        final SlideshowView newGameSlideshow = new SlideshowView(getWidth(), getHeight(), SlideshowView.SLIDESHOW_IMGS, SlideshowView.SLIDESHOW_TIMES);
+
+        newGameSlideshow.addSlideshowListener(new SlideshowListener() {
+            @Override
+            public void slideshowEnded(SlideshowView sender) {
+                sender.setVisible(false);
+                mainMenu.setVisible(true);
             }
         });
+        putView(SLIDESHOW_VIEW_ID, newGameSlideshow);
+
+        mainMenu.addItem("New game", newGameAction);
         mainMenu.addItem("High scores", new MenuView.Action() {
             @Override
             public void doAction(MenuView sender) {
@@ -332,18 +359,19 @@ public final class GameCanvas extends Canvas implements Runnable, ComponentListe
         });
         putView(NEW_GAME_MENU_VIEW_ID, mainMenu);
 
-
-        HighScoreTable.getInstance().setMenuView(highScoreMenu);
-        highScoreMenu.addItem("<-- Back", new MenuView.Action() {
+        final MenuView.Action viewMainMenuAction = new MenuView.Action() {
             @Override
             public void doAction(MenuView sender) {
                 sender.setVisible(false);
                 mainMenu.setVisible(true);
             }
-        });
+        };
+
+        HighScoreTable.getInstance().setMenuView(highScoreMenu);
+        highScoreMenu.addItem("<-- Back", viewMainMenuAction);
         putView(HIGHSCORE_TABLE_VIEW_ID, highScoreMenu);
 
-        final MenuView levelClearedMenu = new MenuView(getWidth(), getHeight(), "Level cleared");
+        final MenuView levelClearedMenu = new MenuView(getWidth(), getHeight());
         levelClearedMenu.addItem("Next level", new MenuView.Action() {
             @Override
             public void doAction(MenuView sender) {
@@ -351,13 +379,7 @@ public final class GameCanvas extends Canvas implements Runnable, ComponentListe
                 sender.setVisible(false);
             }
         });
-        levelClearedMenu.addItem("New game", new MenuView.Action() {
-            @Override
-            public void doAction(MenuView sender) {
-                startNextGame(true);
-                sender.setVisible(false);
-            }
-        });
+        levelClearedMenu.addItem("Restart game", newGameAction);
         levelClearedMenu.addItem("Exit", new MenuView.Action() {
             @Override
             public void doAction(MenuView sender) {
@@ -366,22 +388,18 @@ public final class GameCanvas extends Canvas implements Runnable, ComponentListe
         });
         putView(LEVEL_CLEARED_MENU_VIEW_ID, levelClearedMenu);
 
-        final MenuView gameLostMenu = new MenuView(getWidth(), getHeight(), "You lose");
-        gameLostMenu.addItem("New game", new MenuView.Action() {
-            @Override
-            public void doAction(MenuView sender) {
-                startNextGame(true);
-                sender.setVisible(false);
-            }
-        });
-        gameLostMenu.addItem("Add to high scores", new MenuView.Action() {
+        final MenuView.Action toHighScoreAction = new MenuView.Action() {
             @Override
             public void doAction(MenuView sender) {
                 HighScoreTable.getInstance().showAddEntryDialog(GameCanvas.this, game.getPlayerScore(), nextGameLevel - 1);
                 sender.setVisible(false);
                 mainMenu.setVisible(true);
             }
-        });
+        };
+
+        final MenuView gameLostMenu = new MenuView(getWidth(), getHeight(), "You lose");
+        gameLostMenu.addItem("Add to high scores", toHighScoreAction);
+        gameLostMenu.addItem("Restart game", newGameAction);
         gameLostMenu.addItem("Exit", new MenuView.Action() {
             @Override
             public void doAction(MenuView sender) {
@@ -391,7 +409,7 @@ public final class GameCanvas extends Canvas implements Runnable, ComponentListe
         putView(GAME_LOST_MENU_VIEW_ID, gameLostMenu);
 
         final MenuView chooserLostMenu = new MenuView(getWidth(), getHeight(), "Bad sequence");
-        chooserLostMenu.addItem("Retry game", new MenuView.Action() {
+        chooserLostMenu.addItem("Retry level", new MenuView.Action() {
             @Override
             public void doAction(MenuView sender) {
                 resetCurrentGame();
@@ -407,13 +425,8 @@ public final class GameCanvas extends Canvas implements Runnable, ComponentListe
         putView(CHOOSER_LOST_MENU_VIEW_ID, chooserLostMenu);
 
         final MenuView gameWonMenu = new MenuView(getWidth(), getHeight(), "Game won");
-        gameWonMenu.addItem("New game", new MenuView.Action() {
-            @Override
-            public void doAction(MenuView sender) {
-                startNextGame(true);
-                sender.setVisible(false);
-            }
-        });
+        gameWonMenu.addItem("Add to high scores", toHighScoreAction);
+        gameWonMenu.addItem("Restart game", newGameAction);
         gameWonMenu.addItem("Exit", new MenuView.Action() {
             @Override
             public void doAction(MenuView sender) {
@@ -422,12 +435,33 @@ public final class GameCanvas extends Canvas implements Runnable, ComponentListe
         });
         putView(GAME_WON_MENU_VIEW_ID, gameWonMenu);
 
+        final MenuView gamePausedMenu = new MenuView(getWidth(), getHeight());
+        gamePausedMenu.addItem("Unpause game", new MenuView.Action() {
+            @Override
+            public void doAction(MenuView sender) {
+                if (game == null) return;
+                synchronized (loopLock) {
+                    sender.setVisible(false);
+                    game.setPaused(false);
+                    game.setVisible(true);
+                }
+            }
+        });
+        gamePausedMenu.addItem("Restart game", newGameAction);
+        gamePausedMenu.addItem("Exit", new MenuView.Action() {
+            @Override
+            public void doAction(MenuView sender) {
+                System.exit(0);
+            }
+        });
+        putView(GAME_PAUSED_MENU_VIEW_ID, gamePausedMenu);
+
         final SeqChooserView seqChooser = new SeqChooserView(getWidth(), getHeight());
         seqChooser.addSeqListener(this);
         putView(SEQUENCE_CHOOSER_VIEW_ID, seqChooser);
 
-
-        mainMenu.setVisible(true);
+        newGameSlideshow.setVisible(true);
+        //seqChooser.setVisible(true);
 
         createBufferStrategy(2);
         buffer = getBufferStrategy();

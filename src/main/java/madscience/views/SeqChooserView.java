@@ -1,8 +1,10 @@
 package madscience.views;
 
+import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Font;
 import java.awt.Graphics2D;
+import java.awt.Stroke;
 import java.awt.event.MouseEvent;
 import java.awt.geom.Rectangle2D;
 import java.util.ArrayList;
@@ -16,10 +18,14 @@ import madscience.sprites.SeqElixirSprite;
  * @author Richard Kakaš
  */
 public class SeqChooserView extends CanvasView {
-    private static final Font TEXT_FONT = new Font(Font.SANS_SERIF, Font.PLAIN, 25);
+    private static final Font INFO_FONT = new Font(Font.SANS_SERIF, Font.PLAIN, 25);
     private static final Color TEXT_COLOR = Color.GREEN;
+    private static final Font TEXT_FONT = new Font(Font.SANS_SERIF, Font.PLAIN, 20);
+    private static final float TEXT_TOP_MARGIN = 50;
+    private static final float TEXT_LEFT_MARGIN = 20;
+
     private static final int MAX_BAD_TRIES = 3;
-    private static final double SPRITES_MARGIN = 20;
+    private static final float SPRITES_MARGIN = 20;
 
     private Set<SeqChooserListener> seqListeners = new HashSet<SeqChooserListener>();
 
@@ -78,7 +84,7 @@ public class SeqChooserView extends CanvasView {
 
     public void checkClickedElixir() {
         if (clickIndex < 0 || clickIndex >= seqSpritesToView.size() || seqSpritesToCheck == null ||
-            nextSeqSprite >= seqSpritesToCheck.size() || badTriesLeft < 0) return;
+            nextSeqSprite >= seqSpritesToCheck.size() || badTriesLeft <= 0) return;
 
         if (seqSpritesToView.get(clickIndex).compareTo(seqSpritesToCheck.get(nextSeqSprite)) == 0) {
             nextSeqSprite++;
@@ -88,7 +94,7 @@ public class SeqChooserView extends CanvasView {
         }
         else {
             badTriesLeft--;
-            if (badTriesLeft < 0) {
+            if (badTriesLeft == 0) {
                 for (SeqChooserListener l : seqListeners) l.seqChooserEnded(this, false);
             }
         }
@@ -102,22 +108,32 @@ public class SeqChooserView extends CanvasView {
 
         g.clearRect(0, 0, getWidth(), getHeight());
 
-        g.setFont(TEXT_FONT);
+        g.setFont(INFO_FONT);
         g.setColor(TEXT_COLOR);
-
-
-        g.drawString("Bad tries left: " + badTriesLeft, 10, 40);
+        String badTriesStr = "Bad tries left: " + badTriesLeft;
+        Rectangle2D bounds = TEXT_FONT.getStringBounds(badTriesStr, g.getFontRenderContext());
+        g.drawString(badTriesStr, TEXT_LEFT_MARGIN, (float) bounds.getHeight() + TEXT_TOP_MARGIN);
 
         int elixirsLeft = 0;
         if (seqSpritesToCheck != null) elixirsLeft = seqSpritesToCheck.size() - nextSeqSprite;
-        g.drawString("Elixirs left: " + elixirsLeft, 10, 60);
+
+        g.drawString("Elixirs left: " + elixirsLeft, TEXT_LEFT_MARGIN, TEXT_TOP_MARGIN + (float) (2*bounds.getHeight()));
+
+        g.setFont(TEXT_FONT);
+        g.drawString("Click on elixirs in the same order as they appeard on the wall:", 2*TEXT_LEFT_MARGIN, 3*TEXT_TOP_MARGIN + (float) (2*bounds.getHeight()));
 
         int i = 0;
         for (SeqElixirSprite sprite : seqSpritesToView) {
             if (hoverIndex == i) {
                 if (clickIndex == hoverIndex) g.setColor(Color.RED);
                 else g.setColor(Color.YELLOW);
-                g.draw(new Rectangle2D.Double(sprite.getX(), sprite.getY(), sprite.getWidth(), sprite.getHeight()));
+
+                Stroke oldStroke = g.getStroke();
+                int stroke = 2;
+                g.setStroke(new BasicStroke(stroke));
+                g.draw(new Rectangle2D.Double(sprite.getX() - stroke / 2, sprite.getY() - stroke / 2,
+                                              sprite.getWidth() + stroke / 2, sprite.getHeight() + stroke / 2));
+                g.setStroke(oldStroke);
             }
             sprite.draw(g);
             i++;

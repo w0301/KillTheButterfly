@@ -125,7 +125,7 @@ public class PlayerSprite extends ShooterSprite {
              (sprite instanceof EnemySprite) ) {
             if (hasShield()) setShield(false);
             else removeLife();
-            playShootedSound();
+            if (!(sprite instanceof HoleSprite)) playShootedSound();
         }
     }
 

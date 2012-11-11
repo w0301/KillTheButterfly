@@ -1,0 +1,11 @@
+Názov tímu: Tampóni
+Názov hry: MadScience
+Vývojové prostredie a prostriedky: Java, Maven, Git, NetBeans, Photoshop, Audacity
+
+Obrázky:
+    - všetko vlastná výroba
+
+Hudba:
+    - src/main/resources/sounds/glass_break.wav - freesound.org
+    - src/main/resources/sounds/player_shot.wav - freesound.org
+    - ostatné vlastná výroba

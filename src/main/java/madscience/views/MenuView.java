@@ -45,7 +45,7 @@ public class MenuView extends CanvasView {
     private List<Item> items = new ArrayList<Item>();
 
     private int currentItem = 0;
-    private boolean canDoAction = true;
+    private boolean canDoAction = false;
     private boolean canSelectNext = true;
     private boolean canSelectPrev = true;
 
@@ -126,6 +126,12 @@ public class MenuView extends CanvasView {
                 return;
             }
         }
+    }
+
+    public void resetKeys() {
+        canDoAction = true;
+        canSelectNext = true;
+        canSelectPrev = true;
     }
 
     @Override

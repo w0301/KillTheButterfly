@@ -3,18 +3,12 @@ package madscience;
 import java.awt.Component;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
-import java.io.IOException;
 import java.io.PrintWriter;
-import java.security.GeneralSecurityException;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Scanner;
-import javax.crypto.Cipher;
-import javax.crypto.CipherInputStream;
-import javax.crypto.CipherOutputStream;
 import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
 import madscience.views.MenuView;
@@ -24,6 +18,8 @@ import madscience.views.MenuView;
  * @author Richard Kakaš
  */
 public class HighScoreTable {
+    public static final int MAX_HIGHSCORE_ENTRIES = 10;
+
     private static final HighScoreTable tableInstance;
 
     static {
@@ -63,16 +59,12 @@ public class HighScoreTable {
     private void saveTable() {
         try {
             file.createNewFile();
-        }
-        catch (IOException e) {
-            return;
-        }
 
-        FileOutputStream fileStream = null;
-        PrintWriter out;
-        try {
-            fileStream = new FileOutputStream(file);
-            out = new PrintWriter(fileStream);
+            FileOutputStream fileStream = new FileOutputStream(file);
+            PrintWriter out = new PrintWriter(fileStream);
+
+            if (tableEntries.size() > 0)
+                tableEntries = tableEntries.subList(0, Math.min(tableEntries.size(), MAX_HIGHSCORE_ENTRIES));
 
             out.println(tableEntries.size());
             for (int i = 0; i < tableEntries.size(); i++) {
@@ -86,11 +78,9 @@ public class HighScoreTable {
     private void loadTable() {
         if (!file.exists()) return;
 
-        FileInputStream fileStream = null;
-        Scanner in;
         try {
-            fileStream = new FileInputStream(file);
-            in = new Scanner(fileStream);
+            FileInputStream fileStream = new FileInputStream(file);
+            Scanner in = new Scanner(fileStream);
 
             int entriesCount = in.nextInt();
             for (int i = 0; i < entriesCount; i++) {
@@ -100,6 +90,8 @@ public class HighScoreTable {
                 tableEntries.add(new TableEntry(name, score, level));
             }
             Collections.sort(tableEntries);
+            if (tableEntries.size() > 0)
+                tableEntries = tableEntries.subList(0, Math.min(tableEntries.size(), MAX_HIGHSCORE_ENTRIES));
 
             in.close();
         }
@@ -133,7 +125,7 @@ public class HighScoreTable {
         menuView.removeAllNotSelectableItems();
         int i = 0;
         for (TableEntry entry : tableEntries) {
-            menuView.addItem(i++, entry.toMenuString(), null);
+            menuView.addItem(i++, i + ". " + entry.toMenuString(), null);
         }
     }
 
@@ -141,14 +133,14 @@ public class HighScoreTable {
         SwingUtilities.invokeLater(new Runnable() {
             @Override
             public void run() {
-                String str = (badName ? "You entered bad name!\n" : "");
-                str += "Enter your name: ";
-                String ret = JOptionPane.showInputDialog(null, str, "New high score", JOptionPane.INFORMATION_MESSAGE);
+                String str = (badName ? "Name can't be empty!\n\n" : "");
+                str += "Score: " + score + "\nLevel: " + level + "\nEnter your name: ";
+                String ret = JOptionPane.showInputDialog(parent, str, "New high score", JOptionPane.INFORMATION_MESSAGE);
                 if (ret != null && !ret.equals("")) {
                     addEntry(ret, score, level);
                     refreshMenuView();
                 }
-                else showAddEntryDialog(parent, score, level, true);
+                else if (ret != null) showAddEntryDialog(parent, score, level, true);
             }
         });
     }

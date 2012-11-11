@@ -69,6 +69,7 @@ public final class GameView extends CanvasView {
     // game info
     private int playerScore = 0;
     private boolean paused = false;
+    private boolean canKeyPause = false;
 
     // enemy and other sprites generations
     private static class SpritePossibility {
@@ -181,6 +182,14 @@ public final class GameView extends CanvasView {
         spritesToRemove = new ArrayList<AbstractSprite>();
     }
 
+    @Override
+    public void setVisible(boolean val) {
+        if (val != isVisible()) {
+            canKeyPause = false;
+        }
+        super.setVisible(val);
+    }
+
     public void addGameListener(GameViewListener l) {
         gameListeners.add(l);
     }
@@ -197,6 +206,7 @@ public final class GameView extends CanvasView {
         this.paused = paused;
         if (paused) {
             for (GameViewListener l : gameListeners) l.gamePaused(this);
+
         }
         else {
             for (GameViewListener l : gameListeners) l.gameUnpaused(this);
@@ -509,7 +519,17 @@ public final class GameView extends CanvasView {
 
     @Override
     public void processKeys(Set<Integer> keys) {
-        if (isPaused() || isEnded() || !isVisible()) return;
+        if (isEnded() || !isVisible()) return;
+
+        if (keys.contains(KeyEvent.VK_ESCAPE) || keys.contains(KeyEvent.VK_PAUSE)) {
+            if (canKeyPause) {
+                setPaused(!isPaused());
+                canKeyPause = false;
+            }
+        }
+        else canKeyPause = true;
+
+        if (isPaused()) return;
 
         boolean shoot = false, up = false, down = false;
         for (Integer key : keys) {
