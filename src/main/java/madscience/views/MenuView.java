@@ -7,6 +7,7 @@ import java.awt.event.KeyEvent;
 import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
@@ -70,8 +71,21 @@ public class MenuView extends CanvasView {
         return items.size() - 1;
     }
 
+    public int addItem(int index, String text, Action action) {
+        items.add(index, new Item(text, action));
+        return index;
+    }
+
     public void removeItem(int index) {
         items.remove(index);
+    }
+
+    public void removeAllNotSelectableItems() {
+        List<Item> newItems = new ArrayList<Item>();
+        for (Item item : items) {
+            if (item.isSelectable()) newItems.add(item);
+        }
+        items = newItems;
     }
 
     public int getCurrentItem() {
@@ -116,7 +130,11 @@ public class MenuView extends CanvasView {
 
     @Override
     public void setVisible(boolean val) {
-        if (isVisible() != val) currentItem = 0;
+        if (isVisible() != val) {
+            currentItem = 0;
+            if (!items.get(currentItem).isSelectable()) selectNextItem();
+            canDoAction = false;
+        }
         super.setVisible(val);
     }
 
@@ -151,6 +169,7 @@ public class MenuView extends CanvasView {
             g.setFont(ITEM_FONT);
             double rectYAdd = bounds.getHeight() - 5;
             bounds.setRect(getWidth() / 2 - bounds.getWidth() / 2, menuStartY - rectYAdd, bounds.getWidth() + 1, bounds.getHeight());
+
             if (currentItem == i) {
                 g.setColor(ITEM_SELECTED_COLOR);
                 g.draw(bounds);

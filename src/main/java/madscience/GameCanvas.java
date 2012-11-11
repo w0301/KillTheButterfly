@@ -80,6 +80,7 @@ public final class GameCanvas extends Canvas implements Runnable, ComponentListe
     private static final int SEQUENCE_CHOOSER_VIEW_ID = 6;
     private static final int CHOOSER_LOST_MENU_VIEW_ID = 7;
     private static final int GAME_WON_MENU_VIEW_ID = 8;
+    private static final int HIGHSCORE_TABLE_VIEW_ID = 9;
 
     private BufferStrategy buffer;
 
@@ -306,12 +307,21 @@ public final class GameCanvas extends Canvas implements Runnable, ComponentListe
 
     @Override
     public void componentShown(ComponentEvent ce) {
-        MenuView mainMenu = new MenuView(getWidth(), getHeight(), "Main menu");
+        final MenuView mainMenu = new MenuView(getWidth(), getHeight(), "Main menu");
+        final MenuView highScoreMenu = new MenuView(getWidth(), getHeight(), "High scores");
+
         mainMenu.addItem("New game", new MenuView.Action() {
             @Override
             public void doAction(MenuView sender) {
                 startNextGame(true);
                 sender.setVisible(false);
+            }
+        });
+        mainMenu.addItem("High scores", new MenuView.Action() {
+            @Override
+            public void doAction(MenuView sender) {
+                sender.setVisible(false);
+                highScoreMenu.setVisible(true);
             }
         });
         mainMenu.addItem("Exit", new MenuView.Action() {
@@ -322,7 +332,18 @@ public final class GameCanvas extends Canvas implements Runnable, ComponentListe
         });
         putView(NEW_GAME_MENU_VIEW_ID, mainMenu);
 
-        MenuView levelClearedMenu = new MenuView(getWidth(), getHeight(), "Level cleared");
+
+        HighScoreTable.getInstance().setMenuView(highScoreMenu);
+        highScoreMenu.addItem("<-- Back", new MenuView.Action() {
+            @Override
+            public void doAction(MenuView sender) {
+                sender.setVisible(false);
+                mainMenu.setVisible(true);
+            }
+        });
+        putView(HIGHSCORE_TABLE_VIEW_ID, highScoreMenu);
+
+        final MenuView levelClearedMenu = new MenuView(getWidth(), getHeight(), "Level cleared");
         levelClearedMenu.addItem("Next level", new MenuView.Action() {
             @Override
             public void doAction(MenuView sender) {
@@ -345,12 +366,20 @@ public final class GameCanvas extends Canvas implements Runnable, ComponentListe
         });
         putView(LEVEL_CLEARED_MENU_VIEW_ID, levelClearedMenu);
 
-        MenuView gameLostMenu = new MenuView(getWidth(), getHeight(), "You lose");
+        final MenuView gameLostMenu = new MenuView(getWidth(), getHeight(), "You lose");
         gameLostMenu.addItem("New game", new MenuView.Action() {
             @Override
             public void doAction(MenuView sender) {
                 startNextGame(true);
                 sender.setVisible(false);
+            }
+        });
+        gameLostMenu.addItem("Add to high scores", new MenuView.Action() {
+            @Override
+            public void doAction(MenuView sender) {
+                HighScoreTable.getInstance().showAddEntryDialog(GameCanvas.this, game.getPlayerScore(), nextGameLevel - 1);
+                sender.setVisible(false);
+                mainMenu.setVisible(true);
             }
         });
         gameLostMenu.addItem("Exit", new MenuView.Action() {
@@ -361,7 +390,7 @@ public final class GameCanvas extends Canvas implements Runnable, ComponentListe
         });
         putView(GAME_LOST_MENU_VIEW_ID, gameLostMenu);
 
-        MenuView chooserLostMenu = new MenuView(getWidth(), getHeight(), "Bad sequence");
+        final MenuView chooserLostMenu = new MenuView(getWidth(), getHeight(), "Bad sequence");
         chooserLostMenu.addItem("Retry game", new MenuView.Action() {
             @Override
             public void doAction(MenuView sender) {
@@ -377,7 +406,7 @@ public final class GameCanvas extends Canvas implements Runnable, ComponentListe
         });
         putView(CHOOSER_LOST_MENU_VIEW_ID, chooserLostMenu);
 
-        MenuView gameWonMenu = new MenuView(getWidth(), getHeight(), "Game won");
+        final MenuView gameWonMenu = new MenuView(getWidth(), getHeight(), "Game won");
         gameWonMenu.addItem("New game", new MenuView.Action() {
             @Override
             public void doAction(MenuView sender) {
@@ -393,11 +422,11 @@ public final class GameCanvas extends Canvas implements Runnable, ComponentListe
         });
         putView(GAME_WON_MENU_VIEW_ID, gameWonMenu);
 
-        SeqChooserView seqChooser = new SeqChooserView(getWidth(), getHeight());
+        final SeqChooserView seqChooser = new SeqChooserView(getWidth(), getHeight());
         seqChooser.addSeqListener(this);
         putView(SEQUENCE_CHOOSER_VIEW_ID, seqChooser);
 
-        //seqChooser.setVisible(true);
+
         mainMenu.setVisible(true);
 
         createBufferStrategy(2);
