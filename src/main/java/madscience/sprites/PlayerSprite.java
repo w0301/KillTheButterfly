@@ -9,6 +9,7 @@ import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.Clip;
 import javax.sound.sampled.LineUnavailableException;
 import javax.sound.sampled.UnsupportedAudioFileException;
+import madscience.GameCanvas;
 import madscience.views.GameView;
 
 /**
@@ -57,6 +58,7 @@ public class PlayerSprite extends ShooterSprite {
     private boolean shield = false;
 
     protected void playShootedSound() {
+        if(GameCanvas.isSoundEffectsPaused()) return;
         try {
             Clip clip = AudioSystem.getClip();
             clip.open(AudioSystem.getAudioInputStream(SHOOTED_SOUND));
@@ -123,9 +125,14 @@ public class PlayerSprite extends ShooterSprite {
     public void performIntersection(AbstractSprite sprite) {
         if ( (sprite instanceof BulletSprite && ((BulletSprite) sprite).getOwner() != this) ||
              (sprite instanceof EnemySprite) || (sprite instanceof HoleSprite) ) {
-            if (hasShield()) setShield(false);
-            else removeLife();
-            playShootedSound();
+            if (hasShield() && !(sprite instanceof HoleSprite)) {
+                setShield(false);
+                ElixirSprite.playShieldShootedSound();
+            }
+            else {
+                removeLife();
+                playShootedSound();
+            }
         }
     }
 

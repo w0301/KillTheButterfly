@@ -9,6 +9,7 @@ import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.Clip;
 import javax.sound.sampled.LineUnavailableException;
 import javax.sound.sampled.UnsupportedAudioFileException;
+import madscience.GameCanvas;
 import madscience.views.GameView;
 
 /**
@@ -47,6 +48,7 @@ public abstract class ElixirSprite extends MovableSprite {
     }
 
     protected void playElixirShootedSound() {
+        if(GameCanvas.isSoundEffectsPaused()) return;
         try {
             Clip clip = AudioSystem.getClip();
             clip.open(AudioSystem.getAudioInputStream(ELIXIR_SHOOTED_SOUND));
@@ -57,7 +59,8 @@ public abstract class ElixirSprite extends MovableSprite {
         catch (IOException e) { }
     }
 
-    protected void playShieldShootedSound() {
+    public static void playShieldShootedSound() {
+        if(GameCanvas.isSoundEffectsPaused()) return;
         try {
             Clip clip = AudioSystem.getClip();
             clip.open(AudioSystem.getAudioInputStream(SHIELD_SHOOTED_SOUND));

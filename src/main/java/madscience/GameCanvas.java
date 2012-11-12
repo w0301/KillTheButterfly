@@ -44,6 +44,7 @@ public final class GameCanvas extends Canvas implements Runnable, ComponentListe
     private static Thread backgroundSoundThread = null;
     private static boolean backgroundSoundRunning = false;
     private static boolean backgroundSoundPaused = false;
+    private static boolean soundEffectsPaused = false;
 
     static {
         BACKGROUND_SOUND = new Runnable() {
@@ -87,6 +88,8 @@ public final class GameCanvas extends Canvas implements Runnable, ComponentListe
     private static final int HIGHSCORE_TABLE_VIEW_ID = 9;
     private static final int GAME_PAUSED_MENU_VIEW_ID = 10;
     private static final int SLIDESHOW_VIEW_ID = 11;
+    private static final int CREDITS_MENU_VIEW_ID = 12;
+    private static final int INSTRUCTIONS_VIEW_ID = 13;
 
     private BufferStrategy buffer;
 
@@ -208,10 +211,6 @@ public final class GameCanvas extends Canvas implements Runnable, ComponentListe
         }
     }
 
-    public static void setBackgroundSoundPaused(boolean val) {
-        backgroundSoundPaused = val;
-    }
-
     public static void stopBackgroundSound() {
         if (backgroundSoundThread == null) return;
         boolean stopped = false;
@@ -224,6 +223,22 @@ public final class GameCanvas extends Canvas implements Runnable, ComponentListe
             }
             catch (InterruptedException e) { }
         }
+    }
+
+    public static boolean isBackgroundSoundPaused() {
+        return backgroundSoundPaused;
+    }
+
+    public static void setBackgroundSoundPaused(boolean val) {
+        backgroundSoundPaused = val;
+    }
+
+    public static boolean isSoundEffectsPaused() {
+        return soundEffectsPaused;
+    }
+
+    public static void setSoundEffectsPaused(boolean val) {
+        soundEffectsPaused = val;
     }
 
     @Override
@@ -268,7 +283,7 @@ public final class GameCanvas extends Canvas implements Runnable, ComponentListe
             else {
                 toView = getView(LEVEL_CLEARED_MENU_VIEW_ID);
                 if (toView != null && toView instanceof MenuView) {
-                    ((MenuView) toView).setTitle("Level " + (nextGameLevel - 1) + " cleared");
+                    ((MenuView) toView).setTitle("Level " + (nextGameLevel - 1) + " cleared but it was just Dr. Schmetterling's clone");
                 }
             }
         }
@@ -322,6 +337,23 @@ public final class GameCanvas extends Canvas implements Runnable, ComponentListe
     public void componentShown(ComponentEvent ce) {
         startBackgroundSound();
 
+        final MenuView mainMenu = new MenuView(getWidth(), getHeight(), "Main menu");
+        final MenuView highScoreMenu = new MenuView(getWidth(), getHeight(), "High scores");
+        final SlideshowView newGameSlideshow = new SlideshowView(getWidth(), getHeight(), SlideshowView.SLIDESHOW_IMGS, SlideshowView.SLIDESHOW_TIMES);
+        final MenuView creditsMenu = new MenuView(getWidth(), getHeight(), "Credits");
+
+        final SlideshowView instructionsView = new SlideshowView(getWidth(), getHeight());
+        instructionsView.setSkipMsg("Back");
+        instructionsView.addPage(SlideshowView.INSTRUCTIONS_IMG, Integer.MAX_VALUE);
+        instructionsView.addSlideshowListener(new SlideshowListener() {
+            @Override
+            public void slideshowEnded(SlideshowView sender) {
+                sender.setVisible(false);
+                mainMenu.setVisible(true);
+            }
+        });
+        putView(INSTRUCTIONS_VIEW_ID, instructionsView);
+
         final MenuView.Action newGameAction = new MenuView.Action() {
             @Override
             public void doAction(MenuView sender) {
@@ -330,9 +362,13 @@ public final class GameCanvas extends Canvas implements Runnable, ComponentListe
             }
         };
 
-        final MenuView mainMenu = new MenuView(getWidth(), getHeight(), "Main menu");
-        final MenuView highScoreMenu = new MenuView(getWidth(), getHeight(), "High scores");
-        final SlideshowView newGameSlideshow = new SlideshowView(getWidth(), getHeight(), SlideshowView.SLIDESHOW_IMGS, SlideshowView.SLIDESHOW_TIMES);
+        final MenuView.Action viewMainMenuAction = new MenuView.Action() {
+            @Override
+            public void doAction(MenuView sender) {
+                sender.setVisible(false);
+                mainMenu.setVisible(true);
+            }
+        };
 
         newGameSlideshow.addSlideshowListener(new SlideshowListener() {
             @Override
@@ -351,42 +387,54 @@ public final class GameCanvas extends Canvas implements Runnable, ComponentListe
                 highScoreMenu.setVisible(true);
             }
         });
+        mainMenu.addItem("Instructions", new MenuView.Action() {
+            @Override
+            public void doAction(MenuView sender) {
+                sender.setVisible(false);
+                instructionsView.setVisible(true);
+            }
+        });
+        mainMenu.addItem("Credits", new MenuView.Action() {
+            @Override
+            public void doAction(MenuView sender) {
+                sender.setVisible(false);
+                creditsMenu.setVisible(true);
+            }
+        });
+
         mainMenu.addItem("Exit", new MenuView.Action() {
             @Override
             public void doAction(MenuView sender) {
                 System.exit(0);
             }
         });
+        mainMenu.setBackground(MenuView.MAIN_MENU_IMG2);
         putView(NEW_GAME_MENU_VIEW_ID, mainMenu);
 
-        final MenuView.Action viewMainMenuAction = new MenuView.Action() {
-            @Override
-            public void doAction(MenuView sender) {
-                sender.setVisible(false);
-                mainMenu.setVisible(true);
-            }
-        };
+
+        creditsMenu.addItem("Programing:", null);
+        creditsMenu.addItem("Richard Kakas", null);
+        creditsMenu.addItem("", null);
+        creditsMenu.addItem("Graphics:", null);
+        creditsMenu.addItem("Viktoria Tibenska", null);
+        creditsMenu.addItem("Slavka Ivanicova", null);
+        creditsMenu.addItem("Matus Guoth", null);
+        creditsMenu.addItem("", null);
+        creditsMenu.addItem("Promo:", null);
+        creditsMenu.addItem("Peter Benus", null);
+        creditsMenu.addItem("", null);
+        creditsMenu.addItem("Sounds and music:", null);
+        creditsMenu.addItem("Viktoria Tibenska", null);
+        creditsMenu.addItem("Anton Herenyi", null);
+        creditsMenu.addItem("< Back", viewMainMenuAction);
+        creditsMenu.setBackground(MenuView.MAIN_MENU_IMG);
+        putView(CREDITS_MENU_VIEW_ID, creditsMenu);
+
 
         HighScoreTable.getInstance().setMenuView(highScoreMenu);
-        highScoreMenu.addItem("<-- Back", viewMainMenuAction);
+        highScoreMenu.addItem("< Back", viewMainMenuAction);
+        highScoreMenu.setBackground(MenuView.MAIN_MENU_IMG);
         putView(HIGHSCORE_TABLE_VIEW_ID, highScoreMenu);
-
-        final MenuView levelClearedMenu = new MenuView(getWidth(), getHeight());
-        levelClearedMenu.addItem("Next level", new MenuView.Action() {
-            @Override
-            public void doAction(MenuView sender) {
-                startNextGame(false);
-                sender.setVisible(false);
-            }
-        });
-        levelClearedMenu.addItem("Restart game", newGameAction);
-        levelClearedMenu.addItem("Exit", new MenuView.Action() {
-            @Override
-            public void doAction(MenuView sender) {
-                System.exit(0);
-            }
-        });
-        putView(LEVEL_CLEARED_MENU_VIEW_ID, levelClearedMenu);
 
         final MenuView.Action toHighScoreAction = new MenuView.Action() {
             @Override
@@ -397,6 +445,25 @@ public final class GameCanvas extends Canvas implements Runnable, ComponentListe
             }
         };
 
+        final MenuView levelClearedMenu = new MenuView(getWidth(), getHeight());
+        levelClearedMenu.addItem("Next level", new MenuView.Action() {
+            @Override
+            public void doAction(MenuView sender) {
+                startNextGame(false);
+                sender.setVisible(false);
+            }
+        });
+        levelClearedMenu.addItem("Add to high scores", toHighScoreAction);
+        levelClearedMenu.addItem("Restart game", newGameAction);
+        levelClearedMenu.addItem("Exit", new MenuView.Action() {
+            @Override
+            public void doAction(MenuView sender) {
+                System.exit(0);
+            }
+        });
+        levelClearedMenu.setBackground(MenuView.MAIN_MENU_IMG);
+        putView(LEVEL_CLEARED_MENU_VIEW_ID, levelClearedMenu);
+
         final MenuView gameLostMenu = new MenuView(getWidth(), getHeight(), "You lose");
         gameLostMenu.addItem("Add to high scores", toHighScoreAction);
         gameLostMenu.addItem("Restart game", newGameAction);
@@ -406,6 +473,7 @@ public final class GameCanvas extends Canvas implements Runnable, ComponentListe
                 System.exit(0);
             }
         });
+        gameLostMenu.setBackground(MenuView.GAME_OVER_IMG);
         putView(GAME_LOST_MENU_VIEW_ID, gameLostMenu);
 
         final MenuView chooserLostMenu = new MenuView(getWidth(), getHeight(), "Bad sequence");
@@ -416,15 +484,17 @@ public final class GameCanvas extends Canvas implements Runnable, ComponentListe
                 sender.setVisible(false);
             }
         });
+        chooserLostMenu.addItem("Add to high scores", toHighScoreAction);
         chooserLostMenu.addItem("Exit", new MenuView.Action() {
             @Override
             public void doAction(MenuView sender) {
                 System.exit(0);
             }
         });
+        chooserLostMenu.setBackground(MenuView.MAIN_MENU_IMG);
         putView(CHOOSER_LOST_MENU_VIEW_ID, chooserLostMenu);
 
-        final MenuView gameWonMenu = new MenuView(getWidth(), getHeight(), "Game won");
+        final MenuView gameWonMenu = new MenuView(getWidth(), getHeight(), "You obtained the antidote and defeated the doctor");
         gameWonMenu.addItem("Add to high scores", toHighScoreAction);
         gameWonMenu.addItem("Restart game", newGameAction);
         gameWonMenu.addItem("Exit", new MenuView.Action() {
@@ -433,6 +503,7 @@ public final class GameCanvas extends Canvas implements Runnable, ComponentListe
                 System.exit(0);
             }
         });
+        gameWonMenu.setBackground(MenuView.GAME_WON_IMG);
         putView(GAME_WON_MENU_VIEW_ID, gameWonMenu);
 
         final MenuView gamePausedMenu = new MenuView(getWidth(), getHeight());
@@ -447,6 +518,28 @@ public final class GameCanvas extends Canvas implements Runnable, ComponentListe
                 }
             }
         });
+        gamePausedMenu.addItem("Mute music", new MenuView.Action() {
+            @Override
+            public void doAction(MenuView sender) {
+                setBackgroundSoundPaused(!isBackgroundSoundPaused());
+                MenuView.Item lastItem = sender.getLastItem();
+                if (lastItem != null) {
+                    if (isBackgroundSoundPaused()) lastItem.text = "Unmute music";
+                    else lastItem.text = "Mute music";
+                }
+            }
+        });
+        gamePausedMenu.addItem("Mute sounds", new MenuView.Action() {
+            @Override
+            public void doAction(MenuView sender) {
+                setSoundEffectsPaused(!isSoundEffectsPaused());
+                MenuView.Item lastItem = sender.getLastItem();
+                if (lastItem != null) {
+                    if (isSoundEffectsPaused()) lastItem.text = "Unmute sounds";
+                    else lastItem.text = "Mute sounds";
+                }
+            }
+        });
         gamePausedMenu.addItem("Restart game", newGameAction);
         gamePausedMenu.addItem("Exit", new MenuView.Action() {
             @Override
@@ -454,10 +547,12 @@ public final class GameCanvas extends Canvas implements Runnable, ComponentListe
                 System.exit(0);
             }
         });
+        gamePausedMenu.setBackground(MenuView.MAIN_MENU_IMG);
         putView(GAME_PAUSED_MENU_VIEW_ID, gamePausedMenu);
 
         final SeqChooserView seqChooser = new SeqChooserView(getWidth(), getHeight());
         seqChooser.addSeqListener(this);
+        seqChooser.setBackground(SeqChooserView.CHOOSER_IMG);
         putView(SEQUENCE_CHOOSER_VIEW_ID, seqChooser);
 
         newGameSlideshow.setVisible(true);

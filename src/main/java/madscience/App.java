@@ -18,7 +18,7 @@ public class App {
         SwingUtilities.invokeLater(new Runnable() {
             @Override
             public void run() {
-                JFrame frame = new JFrame("MadScience");
+                JFrame frame = new JFrame("Kill the Butterfly");
                 frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
                 // adding game canvas to frame

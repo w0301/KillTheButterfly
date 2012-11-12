@@ -11,6 +11,7 @@ import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.Clip;
 import javax.sound.sampled.LineUnavailableException;
 import javax.sound.sampled.UnsupportedAudioFileException;
+import madscience.GameCanvas;
 import madscience.views.GameView;
 
 /**
@@ -52,6 +53,7 @@ public class EnemySprite extends ShooterSprite {
     double oscillationPeriod = 2;
 
     protected void playShootedSound() {
+        if(GameCanvas.isSoundEffectsPaused()) return;
         try {
             Clip clip = AudioSystem.getClip();
             clip.open(AudioSystem.getAudioInputStream(SHOOTED_SOUND));
@@ -63,6 +65,7 @@ public class EnemySprite extends ShooterSprite {
     }
 
     protected void playDeadSound() {
+        if(GameCanvas.isSoundEffectsPaused()) return;
         try {
             Clip clip = AudioSystem.getClip();
             clip.open(AudioSystem.getAudioInputStream(DEAD_SOUND));

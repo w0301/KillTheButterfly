@@ -1,5 +1,5 @@
 Názov tímu: Tampóni
-Názov hry: MadScience
+Názov hry: Kill the Butterfly
 Vývojové prostredie a prostriedky: Java, Maven, Git, NetBeans, Photoshop, Audacity
 
 Obrázky:

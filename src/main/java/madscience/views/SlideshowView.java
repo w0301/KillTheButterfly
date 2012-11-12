@@ -18,6 +18,7 @@ import madscience.sprites.EnemySprite;
  * @author Richard Kakaš
  */
 public class SlideshowView extends CanvasView {
+    public static final BufferedImage INSTRUCTIONS_IMG;
     public static final BufferedImage[] SLIDESHOW_IMGS;
     public static final double[] SLIDESHOW_TIMES;
     public static final double DEFAULT_TIME = 2000;
@@ -26,7 +27,16 @@ public class SlideshowView extends CanvasView {
     private static final double SKIP_MARGIN = 30;
 
     static {
-        int count = 7;
+        BufferedImage instructionsImg = null;
+        try {
+            instructionsImg = ImageIO.read(SlideshowView.class.getResourceAsStream("/menu/instructions.png"));
+        }
+        catch (IOException ex) { }
+        finally {
+            INSTRUCTIONS_IMG = instructionsImg;
+        }
+
+        int count = 17;
         SLIDESHOW_IMGS = new BufferedImage[count];
         for (int i = 1; i <= count; i++) {
             SLIDESHOW_IMGS[i - 1] = null;
@@ -35,7 +45,9 @@ public class SlideshowView extends CanvasView {
             }
             catch (IOException e) { }
         }
-        SLIDESHOW_TIMES = new double[] { 7000, 1200, 1200, 1200, 1200, 1200, 1200 };
+        SLIDESHOW_TIMES = new double[] { 7000, 1200, 1200, 1200, 1200, 1200, 1200,
+                                         1200, 1200, 1200, 1200, 1200, 1200, 1200,
+                                         2000, 2000, 6000};
     }
 
     private static class Page {
@@ -55,6 +67,7 @@ public class SlideshowView extends CanvasView {
     private int currentPage = 0;
     private double currentTime = 0;
     private boolean canKeySkip = false;
+    private String skipMsg = "Skip";
 
     private boolean goToPage(int index) {
         if (index < pages.size()) {
@@ -102,6 +115,14 @@ public class SlideshowView extends CanvasView {
         currentTime = 0;
     }
 
+    public String getSkipMsg() {
+        return skipMsg;
+    }
+
+    public void setSkipMsg(String skipMsg) {
+        this.skipMsg = skipMsg;
+    }
+
     @Override
     public void setVisible(boolean val) {
         if (val == true) {
@@ -128,7 +149,7 @@ public class SlideshowView extends CanvasView {
         if (pages.get(currentPage).image != null)
             g.drawImage(pages.get(currentPage).image, null, 0, 0);
 
-        String skipStr = "ESC - Skip";
+        String skipStr = "ESC - " + skipMsg;
         Rectangle2D skipBounds = SKIP_FONT.getStringBounds(skipStr, g.getFontRenderContext());
 
         g.setFont(SKIP_FONT);
@@ -137,9 +158,11 @@ public class SlideshowView extends CanvasView {
 
     @Override
     public void processKeys(Set<Integer> keys) {
+        if (!isVisible()) return;
+
         if (keys.contains(KeyEvent.VK_ESCAPE)) {
             if (canKeySkip) {
-                goToPage(pages.size() - 1);
+                goToPage(pages.size() + 1);
                 canKeySkip = false;
             }
         }

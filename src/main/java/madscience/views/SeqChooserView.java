@@ -7,10 +7,13 @@ import java.awt.Graphics2D;
 import java.awt.Stroke;
 import java.awt.event.MouseEvent;
 import java.awt.geom.Rectangle2D;
+import java.awt.image.BufferedImage;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import javax.imageio.ImageIO;
 import madscience.sprites.SeqElixirSprite;
 
 /**
@@ -18,6 +21,8 @@ import madscience.sprites.SeqElixirSprite;
  * @author Richard Kakaš
  */
 public class SeqChooserView extends CanvasView {
+    public static final BufferedImage CHOOSER_IMG;
+
     private static final Font INFO_FONT = new Font(Font.SANS_SERIF, Font.PLAIN, 25);
     private static final Color TEXT_COLOR = Color.GREEN;
     private static final Font TEXT_FONT = new Font(Font.SANS_SERIF, Font.PLAIN, 20);
@@ -26,6 +31,17 @@ public class SeqChooserView extends CanvasView {
 
     private static final int MAX_BAD_TRIES = 3;
     private static final float SPRITES_MARGIN = 20;
+
+    static {
+        BufferedImage chooserImg = null;
+        try {
+            chooserImg = ImageIO.read(SeqChooserView.class.getResourceAsStream("/menu/elixirs_chooser.png"));
+        }
+        catch (IOException ex) { }
+        finally {
+            CHOOSER_IMG = chooserImg;
+        }
+    }
 
     private Set<SeqChooserListener> seqListeners = new HashSet<SeqChooserListener>();
 
@@ -102,11 +118,9 @@ public class SeqChooserView extends CanvasView {
 
     @Override
     public void draw(Graphics2D g) {
-        super.draw(g);
-
         if (!isVisible()) return;
-
         g.clearRect(0, 0, getWidth(), getHeight());
+        super.draw(g);
 
         g.setFont(INFO_FONT);
         g.setColor(TEXT_COLOR);
@@ -120,7 +134,7 @@ public class SeqChooserView extends CanvasView {
         g.drawString("Elixirs left: " + elixirsLeft, TEXT_LEFT_MARGIN, TEXT_TOP_MARGIN + (float) (2*bounds.getHeight()));
 
         g.setFont(TEXT_FONT);
-        g.drawString("Click on elixirs in the same order as they appeard on the wall:", 2*TEXT_LEFT_MARGIN, 3*TEXT_TOP_MARGIN + (float) (2*bounds.getHeight()));
+        g.drawString("Click on elixirs in the same order as they appeard on the wall:", 2*TEXT_LEFT_MARGIN, 2*TEXT_TOP_MARGIN + (float) (2*bounds.getHeight()));
 
         int i = 0;
         for (SeqElixirSprite sprite : seqSpritesToView) {
